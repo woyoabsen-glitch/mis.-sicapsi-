@@ -1,0 +1,17 @@
+{
+  "name": "SICAPSI - Catatan dan Perkembangan Siswa",
+  "short_name": "SICAPSI",
+  "description": "Sistem Informasi Catatan dan Perkembangan Siswa MI Raudlatul Ulum Al Marzuqi",
+  "start_url": "./index.html",
+  "scope": "./",
+  "id": "sicapsi-mi-al-marzuqi",
+  "display": "standalone",
+  "background_color": "#fbf8f1",
+  "theme_color": "#14532d",
+  "lang": "id",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
