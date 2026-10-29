@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14532d">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>SICAPSI - Catatan &amp; Perkembangan Siswa</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Cinzel:wght@700;800&family=Great+Vibes&display=swap" rel="stylesheet">
+<style>
+:root{
+  --g9:#0b3520; --g8:#14532d; --g7:#166534; --g6:#16a34a; --gold:#c9a24b; --gold-l:#e6c97a; --cream:#fbf8f1; --cream2:#f3eee0;
+  --text:#1f2937; --muted:#6b7280; --line:#e2cf9c;
+  --c-pel:#dc2626; --c-keb:#16a34a; --c-pre:#d97706; --c-prog:#0369a1;
+}
+*{font-family:'Poppins',sans-serif; box-sizing:border-box;}
+body{background:var(--cream); color:var(--text); margin:0;}
+.d-none{display:none !important;}
+.brand-font{font-family:'Cinzel',serif !important;}
+.pattern{background-image:radial-gradient(circle at 20px 20px,rgba(201,162,75,.18) 2px,transparent 3px),radial-gradient(circle at 0 0,rgba(201,162,75,.12) 2px,transparent 3px); background-size:40px 40px;}
+
+/* ---------- LOGIN ---------- */
+#loginView{min-height:100vh; display:flex; align-items:center; justify-content:center; padding:22px;
+  background:radial-gradient(ellipse at 20% 10%,#1f7a47 0,transparent 55%),radial-gradient(ellipse at 90% 90%,#0b3520 0,transparent 60%),#0f3d24; position:relative;}
+#loginView::before{content:""; position:absolute; inset:0; opacity:.35; pointer-events:none;
+  background-image:linear-gradient(45deg,transparent 46%,rgba(201,162,75,.25) 47%,rgba(201,162,75,.25) 53%,transparent 54%),linear-gradient(-45deg,transparent 46%,rgba(201,162,75,.25) 47%,rgba(201,162,75,.25) 53%,transparent 54%); background-size:56px 56px;}
+.login-card{position:relative; width:100%; max-width:420px; background:linear-gradient(180deg,#fdfbf6,#f8f4ea); border:2px solid var(--gold); border-radius:22px; padding:28px 28px 20px; text-align:center;
+  box-shadow:0 0 0 4px rgba(201,162,75,.2),0 24px 70px rgba(0,0,0,.5);}
+.emblem{width:92px; height:92px; margin:0 auto 6px; display:block; filter:drop-shadow(0 4px 8px rgba(0,0,0,.25));}
+.login-card h1{font-family:'Cinzel',serif; font-weight:800; font-size:38px; letter-spacing:2px; margin:0; background:linear-gradient(180deg,#14532d 55%,#b8892b 130%); -webkit-background-clip:text; background-clip:text; color:transparent;}
+.login-card .sub{font-weight:600; font-size:13.5px; margin:0;}
+.login-card .sub2{font-size:12px; color:#4b5563; margin:2px 0 18px;}
+.login-field{position:relative; margin-bottom:12px; text-align:left;}
+.login-field i.lead-ico{position:absolute; left:14px; top:50%; transform:translateY(-50%); color:#4b5563; font-size:17px;}
+.login-field input{height:50px; padding-left:44px; padding-right:44px; border-radius:12px; background:#f3efe6; border:1px solid #d9d2c1;}
+.login-field input:focus{background:#fff; border-color:var(--gold); box-shadow:0 0 0 3px rgba(201,162,75,.25);}
+.login-field .eye{position:absolute; right:8px; top:50%; transform:translateY(-50%); border:0; background:none; color:#6b7280; font-size:18px; padding:6px;}
+.btn-gold{width:100%; height:50px; border-radius:12px; font-weight:700; color:#fff; border:2px solid #d6b45f; background:linear-gradient(180deg,#17703a,#0f4a28); box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 6px 16px rgba(10,60,30,.35);}
+.btn-gold:hover{filter:brightness(1.08); color:#fff;} .btn-gold:disabled{opacity:.6;}
+#loginError{display:none;}
+.login-foot{margin-top:14px; padding-top:10px; border-top:1px solid #e7e0cf; font-size:10.5px; color:#6b7280;}
+
+/* ---------- SHELL ---------- */
+.sidebar{position:fixed; top:0; left:0; bottom:0; width:250px; z-index:1040; display:flex; flex-direction:column; color:#fff; overflow-y:auto;
+  background:linear-gradient(180deg,#14532d,#0b3520); border-right:3px solid var(--gold); transition:left .25s;}
+.sidebar .brand{padding:18px 16px 14px; display:flex; align-items:center; gap:10px; border-bottom:1px solid rgba(201,162,75,.35);}
+.sidebar .brand svg{width:44px; height:44px; flex-shrink:0;}
+.sidebar .brand b{font-family:'Cinzel',serif; font-size:20px; letter-spacing:1.5px; color:var(--gold-l); display:block; line-height:1.1;}
+.sidebar .brand small{font-size:9.5px; line-height:1.3; display:block; color:#cfe3d5;}
+.nav-i{display:flex; align-items:center; gap:12px; padding:12px 16px; margin:4px 10px; border-radius:12px; color:#e5efe8; text-decoration:none; font-weight:500; font-size:14px; cursor:pointer;}
+.nav-i i{font-size:18px; color:var(--gold-l);}
+.nav-i:hover{background:rgba(255,255,255,.08); color:#fff;}
+.nav-i.active{background:linear-gradient(90deg,rgba(201,162,75,.28),rgba(201,162,75,.08)); border:1px solid var(--gold); color:#fff;}
+.sidebar .grow{flex:1;}
+.main{margin-left:250px; min-height:100vh;}
+.topbar{position:sticky; top:0; z-index:1030; padding:12px 18px; display:flex; align-items:center; gap:12px; color:#fff;
+  background:linear-gradient(rgba(6,40,24,.75),rgba(6,40,24,.92)),#0f3d24; border-bottom:3px solid var(--gold); box-shadow:0 6px 18px rgba(10,50,25,.3);}
+.topbar .ttl{font-family:'Cinzel',serif; font-weight:800; font-size:20px; letter-spacing:1px;}
+.topbar .tag{font-family:'Great Vibes',cursive; font-size:19px; color:var(--gold-l); line-height:1; flex:1;}
+.topbar .menu-btn{display:none; background:none; border:1px solid rgba(230,201,122,.6); color:#fff; border-radius:10px; width:38px; height:38px; font-size:20px;}
+.user-chip{display:flex; align-items:center; gap:8px; background:rgba(255,255,255,.12); border:1px solid rgba(230,201,122,.5); border-radius:999px; padding:4px 12px 4px 4px; cursor:pointer;}
+.user-chip .av{width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg,#f0d27c,#b8892b); color:#0f3d24; display:flex; align-items:center; justify-content:center; font-weight:800;}
+.user-chip .un{font-size:12.5px; font-weight:600; line-height:1.1;} .user-chip .ur{font-size:10px; opacity:.8;}
+.content{padding:18px;}
+.page{display:none;} .page.active{display:block;}
+.backdrop{display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:1035;}
+@media (max-width:900px){
+  .sidebar{left:-270px;} .sidebar.open{left:0;} .backdrop.show{display:block;}
+  .main{margin-left:0;} .topbar .menu-btn{display:block;} .topbar .tag{display:none;} .topbar .ttl{flex:1;}
+  .user-chip .ut{display:none;} .user-chip{padding:4px;}
+  .content{padding:12px;}
+}
+
+/* ---------- KARTU ---------- */
+.panel{background:linear-gradient(180deg,#fff,#fffdf8); border:1.5px solid var(--line); border-radius:18px; padding:16px; box-shadow:0 4px 14px rgba(120,90,20,.09); margin-bottom:16px;}
+.panel h5,.panel h6{font-family:'Cinzel',serif; font-weight:800; color:var(--g8); display:flex; align-items:center; gap:8px; margin:0 0 12px; font-size:15px;}
+.panel h5::after,.panel h6::after{content:""; flex:1; height:1.5px; background:linear-gradient(90deg,var(--gold),transparent);}
+.stat{display:flex; align-items:center; gap:12px; background:#fff; border:1.5px solid var(--line); border-radius:16px; padding:12px; height:100%; box-shadow:0 4px 12px rgba(120,90,20,.09); cursor:pointer;}
+.stat .ic{width:46px; height:46px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-size:21px; flex-shrink:0; box-shadow:0 4px 10px rgba(0,0,0,.2);}
+.stat .n{font-size:24px; font-weight:800; line-height:1; color:var(--g8);} .stat .l{font-size:11.5px; color:var(--muted); font-weight:600;} .stat .s{font-size:10.5px; color:var(--muted);}
+.bg-pel{background:linear-gradient(135deg,#f87171,#b91c1c);} .bg-keb{background:linear-gradient(135deg,#22c55e,#15803d);}
+.bg-pre{background:linear-gradient(135deg,#fbbf24,#b45309);} .bg-prog{background:linear-gradient(135deg,#38bdf8,#0369a1);} .bg-sis{background:linear-gradient(135deg,#a78bfa,#6d28d9);}
+
+/* klasemen */
+.tabs-g{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;}
+.tab-g{border:1.5px solid var(--line); background:#faf6ea; color:var(--g8); font-weight:600; font-size:12.5px; padding:6px 14px; border-radius:999px; cursor:pointer;}
+.tab-g.active{background:linear-gradient(180deg,#17703a,#0f4a28); color:var(--gold-l); border-color:var(--gold);}
+.podium{display:flex; align-items:flex-end; justify-content:center; gap:8px; margin:6px 0 14px; min-height:150px;}
+.pod{flex:1; max-width:130px; text-align:center;}
+.pod .nm{font-size:12px; font-weight:700; line-height:1.2; margin-bottom:4px; word-break:break-word;}
+.pod .bar{border-radius:12px 12px 0 0; color:#fff; font-weight:800; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding-top:6px; border:2px solid var(--gold); border-bottom:0;}
+.pod .bar small{font-weight:500; font-size:10px; opacity:.9;}
+.pod.p1 .bar{height:110px; background:linear-gradient(180deg,#f0c75e,#b8892b);} .pod.p2 .bar{height:82px; background:linear-gradient(180deg,#cbd5e1,#64748b);} .pod.p3 .bar{height:62px; background:linear-gradient(180deg,#e0a56b,#92542a);}
+.rank-row{display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px dashed var(--line); font-size:13px;}
+.rank-row:last-child{border-bottom:0;}
+.rank-no{width:26px; height:26px; border-radius:50%; background:var(--cream2); color:var(--g8); font-weight:700; font-size:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+.rank-row .nm{flex:1; min-width:0;} .rank-row .nm b{display:block; line-height:1.2;} .rank-row .nm small{color:var(--muted); font-size:11px;}
+.meter{height:7px; background:#efe8d2; border-radius:99px; overflow:hidden; margin-top:3px;} .meter i{display:block; height:100%; border-radius:99px;}
+.rank-val{font-weight:800; color:var(--g8); text-align:right; min-width:58px;} .rank-val small{display:block; font-weight:500; color:var(--muted); font-size:10.5px;}
+
+/* catatan */
+.kj{border:1.5px solid var(--line); border-left-width:6px; border-radius:14px; background:#fff; padding:12px 14px; margin-bottom:10px;}
+.kj.k-Pelanggaran{border-left-color:var(--c-pel);} .kj.k-Kebaikan{border-left-color:var(--c-keb);} .kj.k-Program{border-left-color:var(--c-prog);}
+.kj.batal{opacity:.6;} .kj.batal .ur{text-decoration:line-through;}
+.bd{display:inline-block; font-size:10.5px; font-weight:700; padding:3px 10px; border-radius:999px; color:#fff;}
+.bd.Pelanggaran{background:var(--c-pel);} .bd.Kebaikan{background:var(--c-keb);} .bd.Prestasi{background:var(--c-pre);} .bd.Program{background:var(--c-prog);} .bd.Batal{background:#6b7280;}
+.chip{display:inline-flex; align-items:center; gap:6px; background:var(--cream2); border:1px solid var(--line); border-radius:999px; padding:3px 10px; font-size:12px; margin:2px 4px 2px 0;}
+.chip button{border:0; background:none; padding:0; color:#9a3412; font-size:14px; line-height:1;}
+.meta{font-size:11.5px; color:var(--muted);} .meta i{color:#b8892b; margin-right:3px;}
+.ur{font-size:13.5px; margin:6px 0 4px; white-space:pre-wrap;}
+
+.form-control,.form-select{background:#faf6ea; border:1px solid #dccfa8; border-radius:10px;}
+.form-control:focus,.form-select:focus{background:#fff; border-color:var(--gold); box-shadow:0 0 0 3px rgba(201,162,75,.25);}
+.form-label{font-size:12.5px; font-weight:600; margin-bottom:4px;}
+.seg{display:grid; grid-template-columns:repeat(3,1fr); gap:8px;}
+.seg .opt{border:1.5px solid var(--line); background:#faf6ea; border-radius:12px; padding:10px 4px; text-align:center; font-size:12.5px; font-weight:700; cursor:pointer;}
+.seg .opt i{display:block; font-size:20px; margin-bottom:2px;}
+.seg .opt.on.Pelanggaran{background:#fee2e2; border-color:var(--c-pel); color:#991b1b;} .seg .opt.on.Kebaikan{background:#dcfce7; border-color:var(--c-keb); color:#166534;} .seg .opt.on.Program{background:#e0f2fe; border-color:var(--c-prog); color:#075985;}
+.picker-list{max-height:210px; overflow:auto; border:1px solid var(--line); border-radius:12px; margin-top:6px; background:#fff;}
+.picker-item{padding:8px 12px; border-bottom:1px solid #f0e8d0; cursor:pointer; font-size:13px; display:flex; justify-content:space-between; gap:8px;}
+.picker-item:hover{background:var(--cream2);} .picker-item small{color:var(--muted);}
+.modal-content{border:2px solid var(--gold); border-radius:18px; background:#fffdf8;}
+.modal-title{font-family:'Cinzel',serif; font-weight:800; color:var(--g8);}
+.btn-outline-gold{border:1.5px solid var(--gold); color:var(--g8); background:#fffdf6; font-weight:600; border-radius:10px;}
+.btn-outline-gold:hover{background:var(--cream2); color:var(--g8);}
+.tbl{width:100%; font-size:13px;} .tbl th{font-size:11px; text-transform:uppercase; color:var(--muted); letter-spacing:.4px; border-bottom:2px solid var(--line); padding:8px 6px; white-space:nowrap;}
+.tbl td{padding:8px 6px; border-bottom:1px solid #f0e8d0; vertical-align:middle;}
+.empty{text-align:center; color:var(--muted); padding:24px 8px; font-size:13px;}
+.toast-box{position:fixed; left:50%; bottom:24px; transform:translateX(-50%); z-index:3000; background:#0f3d24; color:#fff; border:1.5px solid var(--gold); padding:10px 18px; border-radius:12px; font-size:13px; display:none; max-width:90%;}
+.toast-box.err{background:#7f1d1d;}
+.foot{text-align:center; font-size:10.5px; color:#8a7a4a; padding:10px 0 20px;}
+
+/* ---------- LAPORAN ---------- */
+.report-page{background:#fff; width:210mm; max-width:100%; margin:0 auto 18px; padding:14mm 14mm 12mm; border:1px solid #ddd; box-shadow:0 4px 16px rgba(0,0,0,.1); font-size:12px; color:#111; page-break-after:always;}
+.report-page *{font-family:'Poppins',sans-serif;}
+.rp-head{text-align:center; border-bottom:3px double #14532d; padding-bottom:8px; margin-bottom:10px;}
+.rp-head .m{font-family:'Cinzel',serif !important; font-weight:800; font-size:15px; color:#14532d; letter-spacing:.5px;} .rp-head .a{font-size:10.5px; color:#555;}
+.rp-title{text-align:center; font-weight:700; font-size:14px; margin:8px 0 2px;} .rp-per{text-align:center; font-size:12px; margin-bottom:10px;}
+.rp-id td{padding:2px 8px 2px 0; font-size:12px;}
+.rp-sum{display:flex; gap:6px; margin:10px 0;} .rp-sum div{flex:1; border:1px solid #999; border-radius:6px; text-align:center; padding:5px 2px; font-size:10.5px;} .rp-sum b{display:block; font-size:17px;}
+.rp-sec{font-weight:700; font-size:12px; margin:10px 0 4px; padding:3px 8px; color:#fff; border-radius:4px;}
+.rp-sec.Pelanggaran{background:#b91c1c;} .rp-sec.Kebaikan{background:#15803d;} .rp-sec.Program{background:#0369a1;}
+.rp-tbl{width:100%; border-collapse:collapse; font-size:10.5px;} .rp-tbl th,.rp-tbl td{border:1px solid #888; padding:3px 5px; vertical-align:top;} .rp-tbl th{background:#eee;}
+.rp-none{font-size:10.5px; color:#666; font-style:italic; padding:2px 0 4px;}
+.rp-note{border:1px solid #888; min-height:48px; padding:6px; margin-top:4px; font-size:11px; white-space:pre-wrap;}
+.rp-sign{display:flex; justify-content:space-between; margin-top:18px; font-size:11px; text-align:center;} .rp-sign div{width:32%;} .rp-sign .sp{height:52px;}
+@media print{
+  body *{visibility:hidden;} #reportArea,#reportArea *{visibility:visible;}
+  #reportArea{position:absolute; left:0; top:0; width:100%;}
+  .report-page{box-shadow:none; border:0; margin:0; width:100%; padding:10mm 12mm;}
+  .no-print{display:none !important;} @page{size:A4; margin:6mm;}
+}
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<div id="loginView">
+  <div class="login-card">
+    <svg class="emblem" viewBox="0 0 100 100" aria-hidden="true">
+      <defs><linearGradient id="gg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1f7a47"/><stop offset="1" stop-color="#0b3520"/></linearGradient>
+      <linearGradient id="gd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f3d98a"/><stop offset="1" stop-color="#b8892b"/></linearGradient></defs>
+      <path d="M50 4 L90 18 V48 C90 74 70 90 50 97 C30 90 10 74 10 48 V18 Z" fill="url(#gg)" stroke="url(#gd)" stroke-width="3"/>
+      <path d="M50 30 C42 24 30 24 24 27 V62 C30 59 42 59 50 65 C58 59 70 59 76 62 V27 C70 24 58 24 50 30 Z" fill="#fbf8f1" stroke="url(#gd)" stroke-width="2"/>
+      <path d="M50 30 V65" stroke="#b8892b" stroke-width="2"/>
+      <path d="M50 12 l2.6 5.4 5.9.8-4.3 4.1 1 5.9L50 25.4l-5.2 2.8 1-5.9-4.3-4.1 5.9-.8z" fill="url(#gd)"/>
+    </svg>
+    <h1>SICAPSI</h1>
+    <p class="sub">Sistem Informasi Catatan dan Perkembangan Siswa</p>
+    <p class="sub2">MI Raudlatul Ulum Al Marzuqi</p>
+    <div id="loginError" class="alert alert-danger py-2 small text-start"></div>
+    <form onsubmit="doLogin(); return false;" autocomplete="on">
+      <div class="login-field"><i class="bi bi-person lead-ico"></i><input class="form-control" id="lgUser" placeholder="Username" autocapitalize="none" autocomplete="username" required></div>
+      <div class="login-field"><i class="bi bi-lock lead-ico"></i><input type="password" class="form-control" id="lgPass" placeholder="Password" autocomplete="current-password" required>
+        <button type="button" class="eye" onclick="togglePw('lgPass',this)" aria-label="Tampilkan password"><i class="bi bi-eye"></i></button></div>
+      <button class="btn btn-gold" id="lgBtn" type="submit">Masuk <i class="bi bi-arrow-right ms-1"></i></button>
+    </form>
+    <div class="login-foot">&copy; 2026 SICAPSI &middot; Madrasah Ibtidaiyah Raudlatul Ulum Al Marzuqi</div>
+  </div>
+</div>
+
+<!-- ============ APLIKASI ============ -->
+<div id="app" class="d-none">
+  <div class="backdrop" id="backdrop" onclick="toggleSidebar(false)"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <svg viewBox="0 0 100 100"><path d="M50 4 L90 18 V48 C90 74 70 90 50 97 C30 90 10 74 10 48 V18 Z" fill="#0f3d24" stroke="#e6c97a" stroke-width="4"/><path d="M50 30 C42 24 30 24 24 27 V62 C30 59 42 59 50 65 C58 59 70 59 76 62 V27 C70 24 58 24 50 30 Z" fill="#fbf8f1"/><path d="M50 30 V65" stroke="#b8892b" stroke-width="2"/></svg>
+      <div><b>SICAPSI</b><small>MI Raudlatul Ulum<br>Al Marzuqi</small></div>
+    </div>
+    <nav id="nav" class="pt-2"></nav>
+    <div class="grow"></div>
+    <a class="nav-i" onclick="openPw()"><i class="bi bi-key-fill"></i> Ganti Password</a>
+    <a class="nav-i mb-2" onclick="doLogout()"><i class="bi bi-box-arrow-left"></i> Keluar</a>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <button class="menu-btn" onclick="toggleSidebar(true)" aria-label="Menu"><i class="bi bi-list"></i></button>
+      <div class="ttl" id="pageTitle">Dashboard</div>
+      <div class="tag">Mencatat dengan jujur, membina dengan hati.</div>
+      <div class="user-chip" onclick="openPw()"><div class="av" id="uAv">A</div><div class="ut"><div class="un" id="uName">-</div><div class="ur" id="uRole">-</div></div></div>
+    </div>
+
+    <div class="content pattern">
+      <!-- DASHBOARD -->
+      <div class="page" id="page-dashboard">
+        <div class="panel d-flex flex-wrap gap-2 align-items-end">
+          <div><label class="form-label">Periode</label>
+            <select class="form-select form-select-sm" id="dbPeriode" onchange="dbPeriodeChange()">
+              <option value="bulan">Bulan ini</option><option value="30">30 hari terakhir</option><option value="ta">Tahun ajaran ini</option><option value="custom">Pilih tanggal…</option>
+            </select></div>
+          <div id="dbCustom" class="d-none d-flex gap-2 align-items-end">
+            <div><label class="form-label">Dari</label><input type="date" class="form-control form-control-sm" id="dbFrom"></div>
+            <div><label class="form-label">Sampai</label><input type="date" class="form-control form-control-sm" id="dbTo"></div>
+            <button class="btn btn-sm btn-outline-gold" onclick="loadDashboard()">Terapkan</button>
+          </div>
+          <div class="ms-auto text-end"><div class="meta" id="dbRangeText"></div></div>
+        </div>
+        <div class="row g-2 mb-3" id="dbCards"></div>
+        <div class="row g-3">
+          <div class="col-lg-7">
+            <div class="panel">
+              <h5><i class="bi bi-trophy-fill" style="color:#b8892b"></i> Klasemen</h5>
+              <div class="tabs-g" id="dbBoardTabs"></div>
+              <div class="tabs-g" id="dbScopeTabs"></div>
+              <div id="dbPodium"></div>
+              <div id="dbRankList"></div>
+              <div class="meta mt-2" id="dbRankNote"></div>
+            </div>
+          </div>
+          <div class="col-lg-5">
+            <div class="panel"><h5><i class="bi bi-graph-up-arrow" style="color:#b8892b"></i> Tren 6 Bulan</h5><div id="dbTren"></div></div>
+            <div class="panel"><h5><i class="bi bi-clock-history" style="color:#b8892b"></i> Catatan Terbaru</h5><div id="dbTerbaru"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CATATAN -->
+      <div class="page" id="page-catatan">
+        <div class="panel">
+          <div class="d-flex flex-wrap gap-2 align-items-end">
+            <button class="btn btn-gold" style="width:auto;padding:0 18px;height:42px;" onclick="openCatatan()"><i class="bi bi-plus-lg"></i> Buat Catatan</button>
+            <div><label class="form-label">Bulan</label><input type="month" class="form-control form-control-sm" id="cfBulan" onchange="loadCatatan()"></div>
+            <div><label class="form-label">Kategori</label><select class="form-select form-select-sm" id="cfKat" onchange="loadCatatan()"><option value="">Semua</option><option>Pelanggaran</option><option>Kebaikan</option><option>Program Sekolah</option></select></div>
+            <div><label class="form-label">Kelas</label><select class="form-select form-select-sm" id="cfKelas" onchange="loadCatatan()"><option value="">Semua</option></select></div>
+            <div class="flex-grow-1" style="min-width:150px"><label class="form-label">Cari</label><input class="form-control form-control-sm" id="cfQ" placeholder="Nama siswa / uraian" oninput="debounceCatatan()"></div>
+            <div class="form-check mb-1" id="cfBatalWrap"><input class="form-check-input" type="checkbox" id="cfBatal" onchange="loadCatatan()"><label class="form-check-label small" for="cfBatal">Tampilkan yang dibatalkan</label></div>
+          </div>
+        </div>
+        <div id="catatanList"></div>
+      </div>
+
+      <!-- SISWA -->
+      <div class="page" id="page-siswa">
+        <div class="panel">
+          <div class="d-flex flex-wrap gap-2 align-items-end mb-3">
+            <div><label class="form-label">Kelas</label><select class="form-select form-select-sm" id="sfKelas" onchange="renderSiswa()"><option value="">Semua</option></select></div>
+            <div class="flex-grow-1" style="min-width:150px"><label class="form-label">Cari</label><input class="form-control form-control-sm" id="sfQ" placeholder="Nama / NIS" oninput="renderSiswa()"></div>
+            <div class="admin-only d-flex gap-2 flex-wrap">
+              <button class="btn btn-sm btn-outline-gold" onclick="downloadTemplate()"><i class="bi bi-download"></i> Template</button>
+              <label class="btn btn-sm btn-outline-gold mb-0"><i class="bi bi-file-earmark-excel"></i> Impor Excel<input type="file" id="siswaFile" accept=".xlsx,.xls,.csv" class="d-none" onchange="importSiswa(this)"></label>
+              <button class="btn btn-sm btn-gold" style="width:auto;height:34px;padding:0 14px;" onclick="openSiswa()"><i class="bi bi-plus-lg"></i> Tambah</button>
+            </div>
+          </div>
+          <div class="table-responsive"><table class="tbl"><thead id="siswaHead"></thead><tbody id="siswaBody"></tbody></table></div>
+        </div>
+      </div>
+
+      <!-- LAPORAN -->
+      <div class="page" id="page-laporan">
+        <div class="panel no-print">
+          <div class="d-flex flex-wrap gap-2 align-items-end">
+            <div><label class="form-label">Bulan</label><input type="month" class="form-control form-control-sm" id="lpBulan"></div>
+            <div><label class="form-label">Kelas</label><select class="form-select form-select-sm" id="lpKelas" onchange="fillLpSiswa()"></select></div>
+            <div><label class="form-label">Siswa</label><select class="form-select form-select-sm" id="lpSiswa"></select></div>
+            <button class="btn btn-gold" style="width:auto;padding:0 18px;height:36px;" onclick="loadLaporan()"><i class="bi bi-file-earmark-text"></i> Tampilkan</button>
+            <button class="btn btn-outline-gold btn-sm d-none" id="lpPrint" onclick="window.print()"><i class="bi bi-printer"></i> Cetak / Simpan PDF</button>
+          </div>
+          <div class="meta mt-2">Tulis catatan wali kelas langsung di kotak pada laporan sebelum dicetak. Satu halaman A4 per siswa.</div>
+        </div>
+        <div id="reportArea"></div>
+      </div>
+
+      <!-- PENGGUNA -->
+      <div class="page" id="page-pengguna">
+        <div class="panel">
+          <div class="d-flex mb-3"><button class="btn btn-gold ms-auto" style="width:auto;padding:0 18px;height:38px;" onclick="openUser()"><i class="bi bi-plus-lg"></i> Tambah Pengguna</button></div>
+          <div class="table-responsive"><table class="tbl"><thead><tr><th>Nama</th><th>Username</th><th>Role</th><th>Wali kelas</th><th>Status</th><th></th></tr></thead><tbody id="userBody"></tbody></table></div>
+        </div>
+      </div>
+
+      <!-- LOG -->
+      <div class="page" id="page-log">
+        <div class="panel"><div class="table-responsive"><table class="tbl"><thead><tr><th>Waktu</th><th>Pelaku</th><th>Aksi</th><th>Rincian</th><th>Alasan</th></tr></thead><tbody id="logBody"></tbody></table></div></div>
+      </div>
+
+      <!-- PENGATURAN -->
+      <div class="page" id="page-pengaturan">
+        <div class="panel" style="max-width:640px">
+          <h5>Identitas Madrasah</h5>
+          <div class="mb-2"><label class="form-label">Nama madrasah</label><input class="form-control" id="pgNama"></div>
+          <div class="mb-2"><label class="form-label">Alamat</label><input class="form-control" id="pgAlamat"></div>
+          <div class="row g-2 mb-2"><div class="col-6"><label class="form-label">Tahun ajaran</label><input class="form-control" id="pgTa" placeholder="2026/2027"></div>
+            <div class="col-6"><label class="form-label">NIP Kepala</label><input class="form-control" id="pgNip"></div></div>
+          <div class="mb-2"><label class="form-label">Nama Kepala Madrasah (untuk tanda tangan laporan)</label><input class="form-control" id="pgKepala"></div>
+          <div class="mb-3"><label class="form-label">Daftar lokasi (pisahkan dengan koma)</label><input class="form-control" id="pgLokasi"></div>
+          <button class="btn btn-gold" style="max-width:220px" onclick="savePengaturan()">Simpan</button>
+        </div>
+      </div>
+
+      <div class="foot">&copy; 2026 SICAPSI &middot; MI Raudlatul Ulum Al Marzuqi</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL ============ -->
+<div class="modal fade" id="mCatatan" tabindex="-1"><div class="modal-dialog modal-dialog-scrollable modal-lg"><div class="modal-content">
+  <div class="modal-header"><h5 class="modal-title">Buat Catatan Siswa</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body">
+    <label class="form-label">Kategori</label>
+    <div class="seg mb-2" id="ctKat">
+      <div class="opt Pelanggaran" data-k="Pelanggaran" onclick="setKat('Pelanggaran')"><i class="bi bi-exclamation-triangle-fill"></i>Pelanggaran</div>
+      <div class="opt Kebaikan" data-k="Kebaikan" onclick="setKat('Kebaikan')"><i class="bi bi-heart-fill"></i>Kebaikan</div>
+      <div class="opt Program" data-k="Program Sekolah" onclick="setKat('Program Sekolah')"><i class="bi bi-mortarboard-fill"></i>Program Sekolah</div>
+    </div>
+    <div class="form-check mb-3 d-none" id="ctPrestasiWrap"><input class="form-check-input" type="checkbox" id="ctPrestasi"><label class="form-check-label small" for="ctPrestasi"><b>Tandai sebagai prestasi</b> (lomba, juara, penghargaan)</label></div>
+    <label class="form-label">Siswa yang terlibat <span class="text-muted fw-normal">(boleh lebih dari satu)</span></label>
+    <div id="ctChips" class="mb-1"></div>
+    <input class="form-control" id="ctCari" placeholder="Ketik nama / NIS / kelas untuk mencari…" oninput="renderPicker()" autocomplete="off">
+    <div class="picker-list d-none" id="ctPicker"></div>
+    <div class="row g-2 mt-2">
+      <div class="col-6"><label class="form-label">Tanggal kejadian</label><input type="date" class="form-control" id="ctTgl"></div>
+      <div class="col-6"><label class="form-label">Jam</label><input type="time" class="form-control" id="ctJam"></div>
+      <div class="col-12"><label class="form-label">Lokasi / kegiatan</label><input class="form-control" id="ctLokasi" list="lokasiList" placeholder="mis. Lapangan"><datalist id="lokasiList"></datalist></div>
+      <div class="col-12"><label class="form-label">Uraian kejadian <span class="text-danger">*</span></label><textarea class="form-control" id="ctUraian" rows="4" placeholder="Tuliskan fakta yang diketahui dengan bahasa yang jelas dan sederhana."></textarea></div>
+      <div class="col-12"><label class="form-label">Tindak lanjut <span class="text-muted fw-normal">(opsional)</span></label><textarea class="form-control" id="ctTL" rows="2"></textarea></div>
+    </div>
+    <div class="alert alert-danger py-2 small mt-3 d-none" id="ctErr"></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-outline-gold" data-bs-dismiss="modal">Batal</button><button class="btn btn-gold" style="width:auto;padding:0 24px;height:40px;" id="ctSave" onclick="saveCatatan()">Simpan Catatan</button></div>
+</div></div></div>
+
+<div class="modal fade" id="mKoreksi" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+  <div class="modal-header"><h5 class="modal-title">Koreksi Catatan</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body">
+    <input type="hidden" id="kxId">
+    <div class="row g-2">
+      <div class="col-6"><label class="form-label">Tanggal</label><input type="date" class="form-control" id="kxTgl"></div>
+      <div class="col-6"><label class="form-label">Jam</label><input type="time" class="form-control" id="kxJam"></div>
+      <div class="col-12"><label class="form-label">Lokasi</label><input class="form-control" id="kxLokasi"></div>
+      <div class="col-12"><label class="form-label">Uraian</label><textarea class="form-control" id="kxUraian" rows="4"></textarea></div>
+      <div class="col-12"><label class="form-label">Tindak lanjut</label><textarea class="form-control" id="kxTL" rows="2"></textarea></div>
+      <div class="col-12"><label class="form-label">Alasan koreksi <span class="text-danger">*</span></label><input class="form-control" id="kxAlasan"></div>
+    </div>
+    <div class="alert alert-danger py-2 small mt-3 d-none" id="kxErr"></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-outline-gold" data-bs-dismiss="modal">Batal</button><button class="btn btn-gold" style="width:auto;padding:0 24px;height:40px;" onclick="saveKoreksi()">Simpan Koreksi</button></div>
+</div></div></div>
+
+<div class="modal fade" id="mSiswa" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+  <div class="modal-header"><h5 class="modal-title" id="msTitle">Siswa</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body"><input type="hidden" id="msId">
+    <div class="row g-2">
+      <div class="col-6"><label class="form-label">NIS</label><input class="form-control" id="msNis"></div>
+      <div class="col-6"><label class="form-label">Kelas <span class="text-danger">*</span></label><input class="form-control" id="msKelas" placeholder="mis. 5A"></div>
+      <div class="col-12"><label class="form-label">Nama lengkap <span class="text-danger">*</span></label><input class="form-control" id="msNama"></div>
+      <div class="col-6"><label class="form-label">Jenis kelamin</label><select class="form-select" id="msJk"><option>Laki-laki</option><option>Perempuan</option></select></div>
+      <div class="col-6"><label class="form-label">Status</label><select class="form-select" id="msStatus"><option>Aktif</option><option>Nonaktif</option><option>Alumni</option><option>Pindah</option></select></div>
+      <div class="col-12"><label class="form-label">Nama wali</label><input class="form-control" id="msWali"></div>
+      <div class="col-12"><label class="form-label">WhatsApp wali</label><div class="input-group"><span class="input-group-text">+62</span><input class="form-control" id="msWa" inputmode="numeric" placeholder="812xxxxxxx"></div></div>
+    </div><div class="alert alert-danger py-2 small mt-3 d-none" id="msErr"></div></div>
+  <div class="modal-footer"><button class="btn btn-outline-gold" data-bs-dismiss="modal">Batal</button><button class="btn btn-gold" style="width:auto;padding:0 24px;height:40px;" onclick="saveSiswa()">Simpan</button></div>
+</div></div></div>
+
+<div class="modal fade" id="mUser" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+  <div class="modal-header"><h5 class="modal-title" id="muTitle">Pengguna</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body"><input type="hidden" id="muId">
+    <div class="row g-2">
+      <div class="col-12"><label class="form-label">Nama</label><input class="form-control" id="muNama"></div>
+      <div class="col-6"><label class="form-label">Username</label><input class="form-control" id="muUser" autocapitalize="none"></div>
+      <div class="col-6"><label class="form-label">Role</label><select class="form-select" id="muRole" onchange="muRoleChange()"><option>Guru</option><option>Kepala</option><option>Super Admin</option></select></div>
+      <div class="col-12" id="muWaliWrap"><label class="form-label">Wali kelas dari <span class="text-muted fw-normal">(kosongkan bila bukan wali kelas)</span></label><input class="form-control" id="muWali" placeholder="mis. 5A"></div>
+      <div class="col-6"><label class="form-label">Status</label><select class="form-select" id="muStatus"><option>Aktif</option><option>Nonaktif</option></select></div>
+      <div class="col-6" id="muPwWrap"><label class="form-label">Password awal (min. 8)</label><input type="text" class="form-control" id="muPw" autocomplete="off"></div>
+    </div>
+    <div id="muResetWrap" class="mt-3 d-none"><button class="btn btn-sm btn-outline-gold" onclick="resetPwUser()"><i class="bi bi-key"></i> Reset password…</button></div>
+    <div class="alert alert-danger py-2 small mt-3 d-none" id="muErr"></div></div>
+  <div class="modal-footer"><button class="btn btn-outline-gold" data-bs-dismiss="modal">Batal</button><button class="btn btn-gold" style="width:auto;padding:0 24px;height:40px;" onclick="saveUser()">Simpan</button></div>
+</div></div></div>
+
+<div class="modal fade" id="mPw" tabindex="-1"><div class="modal-dialog modal-sm"><div class="modal-content">
+  <div class="modal-header"><h5 class="modal-title">Ganti Password</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body">
+    <div class="mb-2"><label class="form-label">Password lama</label><input type="password" class="form-control" id="pwOld"></div>
+    <div class="mb-2"><label class="form-label">Password baru (min. 8)</label><input type="password" class="form-control" id="pwNew"></div>
+    <div class="alert alert-danger py-2 small d-none" id="pwErr"></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-gold" style="height:42px" onclick="savePw()">Simpan</button></div>
+</div></div></div>
+
+<div class="modal fade" id="mBatal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+  <div class="modal-header"><h5 class="modal-title">Batalkan Catatan</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body"><input type="hidden" id="btId">
+    <p class="small">Catatan tidak dihapus: statusnya menjadi <b>Dibatalkan</b>, keluar dari rekap dan laporan, dan tercatat di Log.</p>
+    <label class="form-label">Alasan pembatalan <span class="text-danger">*</span></label><input class="form-control" id="btAlasan">
+    <div class="alert alert-danger py-2 small mt-3 d-none" id="btErr"></div></div>
+  <div class="modal-footer"><button class="btn btn-outline-gold" data-bs-dismiss="modal">Kembali</button><button class="btn btn-danger" onclick="saveBatal()">Batalkan Catatan</button></div>
+</div></div></div>
+
+<div class="toast-box" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="app.js?v=1"></script>
+</body>
+</html>
