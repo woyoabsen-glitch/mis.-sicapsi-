@@ -2,7 +2,7 @@
  *  SICAPSI - tampilan (Fase 1)
  *  Ganti API_URL dengan URL Web App Apps Script Anda (berakhiran /exec).
  * ========================================================= */
-const API_URL = window.SICAPSI_API || 'GANTI_DENGAN_URL_WEB_APP_ANDA';
+const API_URL = window.SICAPSI_API || 'https://script.google.com/macros/s/AKfycbzaetSoOz1Gwpk0J_UFbk3qH5KSKo6pBugMfk3UCh8FbV8OawMKpLGvmKesj-6SD_sdcw/exec';
 
 let TOKEN = null, USER = null, PENG = {}, SISWA = [], DASH = null;
 let boardSel = 'Kebaikan', scopeSel = 'kelas';
