@@ -1,5 +1,5 @@
 /* =========================================================
- *  SICAPSI - tampilan (Fase 1)
+ *  My Eye - tampilan
  *  Ganti API_URL dengan URL Web App Apps Script Anda (berakhiran /exec).
  * ========================================================= */
 const API_URL = window.SICAPSI_API || 'https://script.google.com/macros/s/AKfycbzaetSoOz1Gwpk0J_UFbk3qH5KSKo6pBugMfk3UCh8FbV8OawMKpLGvmKesj-6SD_sdcw/exec';
@@ -76,6 +76,7 @@ const MENU = [
   { id: 'laporan', t: 'Laporan Bulanan', i: 'bi-file-earmark-text-fill', ok: () => seesAll() || isWali() },
   { id: 'pengguna', t: 'Pengguna', i: 'bi-person-gear', ok: isAdmin },
   { id: 'log', t: 'Log Aktivitas', i: 'bi-clock-history', ok: seesAll },
+  { id: 'wa', t: 'WhatsApp', i: 'bi-whatsapp', ok: () => seesAll() || isWali() },
   { id: 'pengaturan', t: 'Pengaturan', i: 'bi-gear-fill', ok: isAdmin }
 ];
 function buildNav() {
@@ -94,6 +95,7 @@ function go(p) {
   if (p === 'laporan') initLaporan();
   if (p === 'pengguna') loadUsers();
   if (p === 'log') loadLog();
+  if (p === 'wa') initWa();
   if (p === 'pengaturan') loadPengaturan();
 }
 function kelasList() { return Array.from(new Set(SISWA.map((s) => s.Kelas))).sort((a, b) => String(a).localeCompare(String(b), 'id', { numeric: true })); }
@@ -196,7 +198,7 @@ function kjCard(k) {
     (k.tindakLanjut ? '<div class="meta"><i class="bi bi-arrow-return-right"></i><b>Tindak lanjut:</b> ' + esc(k.tindakLanjut) + '</div>' : '') +
     (k.status !== 'Aktif' ? '<div class="meta text-danger"><i class="bi bi-x-circle"></i>Alasan batal: ' + esc(k.alasanBatal) + '</div>' : '') +
     '<div class="d-flex flex-wrap gap-2 align-items-center mt-2"><span class="meta">' + (k.lokasi ? '<i class="bi bi-geo-alt"></i>' + esc(k.lokasi) + ' &nbsp;' : '') + '<i class="bi bi-person"></i>' + esc(k.pencatat) + '</span>' +
-    '<span class="ms-auto">' + (k.canKoreksi ? '<button class="btn btn-sm btn-outline-gold me-1" onclick="openKoreksi(\'' + k.kejadianId + '\')"><i class="bi bi-pencil"></i> Koreksi</button>' : '') +
+    '<span class="ms-auto">' + (k.canWa && PENG.WA_Aktif === 'Ya' ? (k.waKirim ? '<span class="meta me-2"><i class="bi bi-whatsapp text-success"></i> terkirim ' + k.waKirim + '/' + k.siswa.length + '</span>' : '') + '<button class="btn btn-sm btn-outline-gold me-1" onclick="waKirimCatatan(\'' + k.kejadianId + '\')"><i class="bi bi-whatsapp"></i> Kirim ke Wali</button>' : '') + (k.canKoreksi ? '<button class="btn btn-sm btn-outline-gold me-1" onclick="openKoreksi(\'' + k.kejadianId + '\')"><i class="bi bi-pencil"></i> Koreksi</button>' : '') +
     (k.canBatal ? '<button class="btn btn-sm btn-outline-danger" onclick="openBatal(\'' + k.kejadianId + '\')"><i class="bi bi-x-circle"></i> Batalkan</button>' : '') + '</span></div></div>';
 }
 function openCatatan() {
@@ -228,7 +230,7 @@ function saveCatatan() {
   const btn = $('ctSave'); btn.disabled = true;
   api('createCatatan', { kategori: ctKat, subkategori: $('ctPrestasi').checked ? 'Prestasi' : 'Umum', siswaIds: selSiswa.map((s) => s.SiswaID), tanggal: $('ctTgl').value, jam: $('ctJam').value,
     lokasi: $('ctLokasi').value, uraian: $('ctUraian').value, tindakLanjut: $('ctTL').value, requestId: ctReq })
-    .then(() => { modal('mCatatan').hide(); toast('Catatan tersimpan.'); if ($('page-catatan').classList.contains('active')) loadCatatan(); else go('catatan'); })
+    .then((r) => { modal('mCatatan').hide(); toast('Catatan tersimpan.' + (r && r.wa ? (r.wa.dilewati ? ' WA otomatis dilewati (lebih dari 10 siswa); kirim manual.' : ' WA ke wali: ' + r.wa.terkirim + ' terkirim' + (r.wa.gagal ? ', ' + r.wa.gagal + ' gagal' : '') + '.') : '')); if ($('page-catatan').classList.contains('active')) loadCatatan(); else go('catatan'); })
     .catch((e) => showErr('ctErr', e.message)).finally(() => { btn.disabled = false; });
 }
 function openKoreksi(id) {
@@ -337,7 +339,7 @@ function reportHtml(r) {
     '<div class="rp-sec Program">C. Program Sekolah</div>' + rpTable(r['Program Sekolah']) +
     '<div class="rp-sec" style="background:#444">Catatan wali kelas</div><div class="rp-note" contenteditable="true" spellcheck="false"></div>' +
     '<div class="rp-sign"><div>Wali Kelas<div class="sp"></div><b>' + esc(r.waliKelas || '................') + '</b></div><div>Orang Tua / Wali<div class="sp"></div>(................)</div><div>Kepala Madrasah<div class="sp"></div><b>' + esc(p.NamaKepala || '................') + '</b>' + (p.NIPKepala ? '<br>NIP. ' + esc(p.NIPKepala) : '') + '</div></div>' +
-    '<div style="font-size:9.5px;color:#777;margin-top:8px">Dicetak ' + esc(cetak) + ' &middot; SICAPSI</div></div>';
+    '<div style="font-size:9.5px;color:#777;margin-top:8px">Dicetak ' + esc(cetak) + ' &middot; My Eye</div></div>';
 }
 
 /* =========================================================
@@ -372,6 +374,110 @@ function loadPengaturan() {
 function savePengaturan() {
   api('savePengaturan', { NamaMadrasah: $('pgNama').value, AlamatMadrasah: $('pgAlamat').value, TahunAjaran: $('pgTa').value, NIPKepala: $('pgNip').value, NamaKepala: $('pgKepala').value, DaftarLokasi: $('pgLokasi').value })
     .then((p) => { PENG = p; toast('Pengaturan tersimpan.'); }).catch((e) => toast(e.message, true));
+}
+
+
+/* =========================================================
+ *  WHATSAPP
+ * ========================================================= */
+let waTab = '';
+const WA_TABS = [
+  { id: 'peng', t: 'Pengumuman', i: 'bi-megaphone-fill', ok: seesAll },
+  { id: 'lap', t: 'Laporan ke Wali', i: 'bi-file-earmark-text', ok: () => seesAll() || isWali() },
+  { id: 'set', t: 'Pengaturan WA', i: 'bi-gear', ok: isAdmin },
+  { id: 'riw', t: 'Riwayat', i: 'bi-clock-history', ok: seesAll }
+];
+function initWa() {
+  const tabs = WA_TABS.filter((t) => t.ok());
+  $('waTabs').innerHTML = tabs.map((t) => '<button class="tab-g" data-t="' + t.id + '" onclick="waGo(\'' + t.id + '\')"><i class="bi ' + t.i + ' me-1"></i>' + t.t + '</button>').join('');
+  api('getPengaturan').then((p) => { PENG = p; }).catch(() => {});
+  const ks = isWali() && !seesAll() ? [USER.waliKelasDari] : kelasList();
+  $('waTarget').innerHTML = '<option value="semua">Semua kelas</option>' + ks.map((k) => '<option value="' + esc(k) + '">Kelas ' + esc(k) + '</option>').join('');
+  $('waLpKelas').innerHTML = ks.map((k) => '<option>' + esc(k) + '</option>').join('');
+  if (!$('waLpBulan').value) $('waLpBulan').value = wib().date.slice(0, 7);
+  if (!ks.length && !initWa._t) { initWa._t = 1; api('listSiswa').then((l) => { SISWA = l; initWa(); }).catch(() => {}); }
+  waGo(waTab && tabs.some((t) => t.id === waTab) ? waTab : tabs[0].id);
+}
+function waGo(t) {
+  waTab = t;
+  document.querySelectorAll('#waTabs .tab-g').forEach((e) => e.classList.toggle('active', e.dataset.t === t));
+  document.querySelectorAll('.wa-pane').forEach((e) => e.classList.toggle('on', e.id === 'waP-' + t));
+  if (t === 'peng') waHitung();
+  if (t === 'set') waLoadSet();
+  if (t === 'riw') waLoadRiw();
+}
+function waHitung() {
+  $('waInfoPen').textContent = 'Menghitung penerima…';
+  api('waHitungPenerima', $('waTarget').value).then((r) => { $('waInfoPen').innerHTML = '<b>' + r.nomor + '</b> nomor wali akan menerima' + (r.tanpaNomor ? ' &middot; ' + r.tanpaNomor + ' siswa belum punya nomor WA' : ''); }).catch((e) => { $('waInfoPen').textContent = e.message; });
+}
+function waProgHtml(r, done) {
+  let h = '<div class="alert ' + (r.gagal && r.gagal.length ? 'alert-warning' : 'alert-success') + ' py-2 small mb-1"><b>' + (done ? 'Selesai.' : 'Mengirim…') + '</b> ' + r.terkirim + ' terkirim, ' + (r.gagal ? r.gagal.length : 0) + ' gagal dari ' + r.total + ' nomor.' + (r.tanpaNomor ? ' ' + r.tanpaNomor + ' siswa tanpa nomor WA dilewati.' : '') + '</div>';
+  if (r.gagal && r.gagal.length) h += '<div class="small text-danger">' + r.gagal.slice(0, 15).map((g) => esc(g.nama) + ': ' + esc(g.alasan)).join('<br>') + (r.gagal.length > 15 ? '<br>…dan ' + (r.gagal.length - 15) + ' lainnya' : '') + '</div>';
+  return h;
+}
+// kirim bertahap: server memproses 25 nomor per panggilan agar tidak kena batas waktu Apps Script
+async function waLoop(btn, box, call, build) {
+  btn.disabled = true; const acc = { terkirim: 0, gagal: [], total: 0, tanpaNomor: 0 }; box.classList.remove('d-none');
+  let offset = 0, extra = {};
+  try {
+    for (;;) {
+      const r = await call(offset, acc, extra);
+      acc.terkirim += r.terkirim; acc.gagal = acc.gagal.concat(r.gagal || []); acc.total = r.total; if (r.tanpaNomor !== undefined) acc.tanpaNomor = r.tanpaNomor; if (r.pid) extra.pid = r.pid;
+      box.innerHTML = waProgHtml(acc, r.done);
+      if (r.done || r.next <= offset) break;
+      offset = r.next;
+    }
+    toast('Pengiriman selesai: ' + acc.terkirim + ' terkirim.');
+  } catch (e) { box.innerHTML = waProgHtml(acc, false) + '<div class="alert alert-danger py-2 small mt-2">' + esc(e.message) + ' Pengiriman berhenti; yang sudah terkirim tidak akan hilang.</div>'; }
+  btn.disabled = false;
+}
+function waKirimPeng() {
+  const judul = $('waJudul').value.trim(), isi = $('waIsi').value.trim(), target = $('waTarget').value;
+  if (!judul || isi.length < 5) { toast('Judul dan isi pengumuman wajib diisi.', true); return; }
+  if (!confirm('Kirim pengumuman "' + judul + '" ke ' + (target === 'semua' ? 'semua wali murid' : 'wali murid kelas ' + target) + '?')) return;
+  waLoop($('waBtnPeng'), $('waProgPeng'), (offset, acc, extra) => api('waKirimPengumuman', { judul: judul, isi: isi, target: target, offset: offset, pid: extra.pid || '', sudahTerkirim: acc.terkirim, sudahGagal: acc.gagal.length }));
+}
+function waKirimLap() {
+  const kelas = $('waLpKelas').value, bulan = $('waLpBulan').value;
+  if (!kelas || !bulan) { toast('Pilih bulan dan kelas.', true); return; }
+  if (!confirm('Kirim ringkasan laporan ' + bulanLong(bulan) + ' ke seluruh wali murid kelas ' + kelas + '?')) return;
+  waLoop($('waBtnLap'), $('waProgLap'), (offset) => api('waKirimLaporan', { kelas: kelas, bulan: bulan, offset: offset }));
+}
+function waKirimCatatan(kid) {
+  const k = CATATAN[kid]; if (!k) return;
+  const ulang = k.waKirim > 0;
+  if (!confirm((ulang ? 'Sebagian wali sudah menerima pesan ini. Kirim hanya ke yang belum?' : 'Kirim catatan ini ke wali ' + k.siswa.length + ' siswa?'))) return;
+  toast('Mengirim…');
+  api('waKirimCatatan', kid, false).then((r) => {
+    if (r.sudahTerkirim) toast('Semua wali sudah menerima pesan ini.');
+    else toast(r.terkirim + ' terkirim' + (r.gagal.length ? ', ' + r.gagal.length + ' gagal: ' + r.gagal[0].alasan : '') + (r.tanpaNomor ? ', ' + r.tanpaNomor + ' tanpa nomor WA' : ''), r.gagal.length > 0 && r.terkirim === 0);
+    loadCatatan();
+  }).catch((e) => toast(e.message, true));
+}
+function waStatus(r) { $('waStatus').innerHTML = '<div class="alert ' + (r.ok ? 'alert-success' : 'alert-warning') + ' py-2 small mb-0"><i class="bi ' + (r.ok ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill') + ' me-1"></i>' + esc(r.message) + '</div>'; }
+function waLoadSet() {
+  api('waGetConfig').then((c) => { $('waToken').value = c.token || ''; if (c.token) waCek(); else waStatus({ ok: false, message: 'Token Fonnte belum diisi.' }); }).catch((e) => toast(e.message, true));
+  api('getPengaturan').then((p) => { PENG = p; $('waAktif').value = p.WA_Aktif; $('waAutoPel').value = p.WA_AutoPelanggaran; $('waAutoKeb').value = p.WA_AutoKebaikan; $('waTplCat').value = p.WA_TplCatatan; $('waTplLap').value = p.WA_TplLaporan; });
+}
+function waSimpanToken() {
+  const t = $('waToken').value.trim(); if (!t) { toast('Token belum diisi.', true); return; }
+  $('waStatus').innerHTML = '<div class="meta">Menyimpan dan mengecek token…</div>';
+  api('waSaveToken', t).then((r) => { waStatus(r); toast(r.ok ? 'Token tersimpan dan valid.' : 'Token tersimpan, tetapi: ' + r.message, !r.ok); }).catch((e) => toast(e.message, true));
+}
+function waCek() { $('waStatus').innerHTML = '<div class="meta">Mengecek koneksi…</div>'; api('waCekKoneksi').then(waStatus).catch((e) => waStatus({ ok: false, message: e.message })); }
+function waTes() {
+  const hp = $('waTes').value.trim(); if (!hp) { toast('Isi nomor tujuan tes.', true); return; }
+  api('waTestKirim', hp).then((r) => toast(r.ok ? 'Pesan tes terkirim.' : 'Gagal: ' + r.reason, !r.ok)).catch((e) => toast(e.message, true));
+}
+function waSimpanAturan() {
+  api('savePengaturan', { WA_Aktif: $('waAktif').value, WA_AutoPelanggaran: $('waAutoPel').value, WA_AutoKebaikan: $('waAutoKeb').value, WA_TplCatatan: $('waTplCat').value, WA_TplLaporan: $('waTplLap').value })
+    .then((p) => { PENG = p; toast('Aturan WhatsApp tersimpan.'); }).catch((e) => toast(e.message, true));
+}
+function waLoadRiw() {
+  api('waRiwayat').then((r) => {
+    $('waRiwPeng').innerHTML = r.pengumuman.length ? r.pengumuman.map((x) => '<tr><td style="white-space:nowrap">' + esc(x.waktu) + '</td><td>' + esc(x.judul) + '</td><td>' + esc(x.target) + '</td><td>' + esc(x.oleh) + '</td><td>' + esc(x.status) + '</td></tr>').join('') : '<tr><td colspan="5" class="empty">Belum ada pengumuman.</td></tr>';
+    $('waRiwLog').innerHTML = r.log.length ? r.log.map((x) => '<tr><td style="white-space:nowrap">' + esc(x.waktu) + '</td><td>' + esc(x.pelaku) + '</td><td><b>' + esc(x.aksi) + '</b></td><td>' + esc(x.rincian) + '</td></tr>').join('') : '<tr><td colspan="4" class="empty">Belum ada aktivitas.</td></tr>';
+  }).catch((e) => toast(e.message, true));
 }
 
 /* ---------- mulai ---------- */
