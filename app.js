@@ -314,13 +314,25 @@ function fillLpSiswa() {
   const k = $('lpKelas').value;
   $('lpSiswa').innerHTML = '<option value="">Semua siswa kelas ' + esc(k) + '</option>' + SISWA.filter((s) => s.Kelas === k).map((s) => '<option value="' + s.SiswaID + '">' + esc(s.Nama) + '</option>').join('');
 }
+let LP_LAST = [];
+function downloadLaporanXls() {
+  if (!LP_LAST.length) return toast('Tampilkan laporan terlebih dahulu.', true);
+  if (typeof XLSX === 'undefined') return toast('Pustaka Excel belum termuat. Periksa internet lalu coba lagi.', true);
+  const rekap = [['Nama', 'NIS', 'Kelas', 'Pelanggaran', 'Kebaikan', 'Prestasi', 'Program Sekolah']], det = [['Nama', 'NIS', 'Kelas', 'Kategori', 'Tanggal', 'Jam', 'Lokasi', 'Uraian', 'Tindak lanjut', 'Pencatat']];
+  LP_LAST.forEach((r) => {
+    const sg = r.siswa, s = r.ringkasan; rekap.push([sg.nama, sg.nis, sg.kelas, s.Pelanggaran, s.Kebaikan, s.Prestasi, s['Program Sekolah']]);
+    ['Pelanggaran', 'Kebaikan', 'Program Sekolah'].forEach((k) => (r[k] || []).forEach((x) => det.push([sg.nama, sg.nis, sg.kelas, k === 'Kebaikan' && x.prestasi ? 'Kebaikan (Prestasi)' : k, x.tanggal, x.jam, x.lokasi, x.uraian, x.tindakLanjut, x.pencatat])));
+  });
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rekap), 'Rekap'); XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(det), 'Catatan Lengkap');
+  XLSX.writeFile(wb, 'laporan-' + LP_LAST[0].siswa.kelas + '-' + LP_LAST[0].bulan + '.xlsx');
+}
 function loadLaporan() {
   const bulan = $('lpBulan').value; if (!bulan) return toast('Pilih bulan laporan.', true);
   const sid = $('lpSiswa').value;
   $('reportArea').innerHTML = '<div class="empty">Menyusun laporan…</div>';
   (sid ? api('getLaporanSiswa', sid, bulan).then((r) => [r]) : api('getLaporanKelas', $('lpKelas').value, bulan)).then((list) => {
     $('reportArea').innerHTML = list.length ? list.map(reportHtml).join('') : '<div class="empty panel">Tidak ada siswa aktif di kelas ini.</div>';
-    $('lpPrint').classList.toggle('d-none', !list.length);
+    LP_LAST = list; document.querySelectorAll('.lp-dl').forEach((b) => b.classList.toggle('d-none', !list.length));
   }).catch((e) => { $('reportArea').innerHTML = '<div class="empty">' + esc(e.message) + '</div>'; });
 }
 function rpTable(rows, withPrestasi) {
