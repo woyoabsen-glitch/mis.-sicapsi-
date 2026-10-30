@@ -284,9 +284,10 @@ body{background:var(--cream); color:var(--text); margin:0;}
             <div><label class="form-label">Kelas</label><select class="form-select form-select-sm" id="lpKelas" onchange="fillLpSiswa()"></select></div>
             <div><label class="form-label">Siswa</label><select class="form-select form-select-sm" id="lpSiswa"></select></div>
             <button class="btn btn-gold" style="width:auto;padding:0 18px;height:36px;" onclick="loadLaporan()"><i class="bi bi-file-earmark-text"></i> Tampilkan</button>
-            <button class="btn btn-outline-gold btn-sm d-none" id="lpPrint" onclick="window.print()"><i class="bi bi-printer"></i> Cetak / Simpan PDF</button>
+            <button class="btn btn-outline-gold d-none lp-dl" id="lpPrint" onclick="window.print()"><i class="bi bi-file-earmark-pdf"></i> Unduh PDF / Cetak</button>
+            <button class="btn btn-outline-gold d-none lp-dl" id="lpXls" onclick="downloadLaporanXls()"><i class="bi bi-file-earmark-excel"></i> Unduh Excel</button>
           </div>
-          <div class="meta mt-2">Tulis catatan wali kelas langsung di kotak pada laporan sebelum dicetak. Satu halaman A4 per siswa.</div>
+          <div class="meta mt-2">Tulis catatan wali kelas langsung di kotak pada laporan sebelum dicetak. Satu halaman A4 per siswa. Setelah laporan tampil, pilih <b>Unduh PDF</b> (di jendela cetak pilih "Simpan sebagai PDF") atau <b>Unduh Excel</b>.</div>
         </div>
         <div id="reportArea"></div>
       </div>
