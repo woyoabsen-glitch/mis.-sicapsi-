@@ -1,12 +1,12 @@
 {
-  "name": "SICAPSI - Catatan dan Perkembangan Siswa",
-  "short_name": "SICAPSI",
-  "description": "Sistem Informasi Catatan dan Perkembangan Siswa MI Raudlatul Ulum Al Marzuqi",
+  "name": "My Eye - Catatan dan Perkembangan Siswa",
+  "short_name": "My Eye",
+  "description": "My Eye: Sistem Informasi Catatan dan Perkembangan Siswa MI Raudlatul Ulum Al Marzuqi",
   "start_url": "./index.html",
   "scope": "./",
-  "id": "sicapsi-mi-al-marzuqi",
+  "id": "myeye-mi-al-marzuqi",
   "display": "standalone",
-  "background_color": "#fbf8f1",
+  "background_color": "#ffffff",
   "theme_color": "#14532d",
   "lang": "id",
   "icons": [
