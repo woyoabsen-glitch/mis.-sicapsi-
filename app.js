@@ -96,7 +96,7 @@ function go(p) {
   if (p === 'pengguna') loadUsers();
   if (p === 'log') loadLog();
   if (p === 'wa') initWa();
-  if (p === 'pengaturan') loadPengaturan();
+  if (p === 'pengaturan') { loadPengaturan(); bkShowLast(); }
 }
 function kelasList() { return Array.from(new Set(SISWA.map((s) => s.Kelas))).sort((a, b) => String(a).localeCompare(String(b), 'id', { numeric: true })); }
 function fillKelasSelects() {
@@ -171,8 +171,8 @@ function renderTerbaru() {
   const l = DASH.terbaru;
   $('dbTerbaru').innerHTML = l.length ? l.map((k) => '<div class="rank-row"><span class="bd ' + badgeCls(k) + '">' + esc(badgeTxt(k)) + '</span><div class="nm"><b style="font-size:12.5px">' + esc(k.siswa.map((s) => s.nama).slice(0, 3).join(', ')) + (k.siswa.length > 3 ? ' +' + (k.siswa.length - 3) : '') + '</b><small>' + esc(tglLong(k.tanggal)) + ' · ' + esc(k.pencatat) + '</small></div></div>').join('') : '<div class="empty">Belum ada catatan.</div>';
 }
-const badgeCls = (k) => k.subkategori === 'Prestasi' ? 'Prestasi' : (k.kategori === 'Program Sekolah' ? 'Program' : k.kategori);
-const badgeTxt = (k) => k.subkategori === 'Prestasi' ? 'Prestasi' : k.kategori;
+const badgeCls = (k) => k.subkategori === 'Prestasi' ? 'Prestasi' : (k.kategori === 'Program Sekolah' ? 'Program' : (k.kategori === 'Tidak Masuk' ? 'TidakMasuk' : k.kategori));
+const badgeTxt = (k) => k.subkategori === 'Prestasi' ? 'Prestasi' : (k.kategori === 'Tidak Masuk' ? 'Tidak Masuk · ' + (k.subkategori || '') : k.kategori);
 
 /* =========================================================
  *  CATATAN
@@ -190,7 +190,7 @@ function loadCatatan() {
   }).catch((e) => { $('catatanList').innerHTML = '<div class="empty">' + esc(e.message) + '</div>'; });
 }
 function kjCard(k) {
-  const kk = k.kategori === 'Program Sekolah' ? 'Program' : k.kategori;
+  const kk = k.kategori === 'Program Sekolah' ? 'Program' : (k.kategori === 'Tidak Masuk' ? 'TidakMasuk' : k.kategori);
   return '<div class="kj k-' + kk + (k.status !== 'Aktif' ? ' batal' : '') + '"><div class="d-flex flex-wrap gap-2 align-items-center mb-1"><span class="bd ' + badgeCls(k) + '">' + esc(badgeTxt(k)) + '</span>' +
     (k.status !== 'Aktif' ? '<span class="bd Batal">Dibatalkan</span>' : '') + '<span class="meta ms-auto"><i class="bi bi-calendar-event"></i>' + esc(tglLong(k.tanggal)) + (k.jam ? ' · ' + esc(k.jam) : '') + '</span></div>' +
     '<div>' + k.siswa.map((s) => '<span class="chip"><b>' + esc(s.nama) + '</b> <small>' + esc(s.kelas) + '</small></span>').join('') + '</div>' +
@@ -202,14 +202,17 @@ function kjCard(k) {
     (k.canBatal ? '<button class="btn btn-sm btn-outline-danger" onclick="openBatal(\'' + k.kejadianId + '\')"><i class="bi bi-x-circle"></i> Batalkan</button>' : '') + '</span></div></div>';
 }
 function openCatatan() {
-  selSiswa = []; ctKat = ''; ctReq = uuid();
+  selSiswa = []; ctKat = ''; ctAbsen = ''; ctReq = uuid();
   ['ctUraian', 'ctTL', 'ctLokasi', 'ctCari'].forEach((i) => { $(i).value = ''; }); $('ctPrestasi').checked = false;
   const n = wib(); $('ctTgl').value = n.date; $('ctJam').value = n.time;
   $('lokasiList').innerHTML = String(PENG.DaftarLokasi || '').split(',').map((x) => '<option value="' + esc(x.trim()) + '">').join('');
   setKat(''); renderChips(); $('ctPicker').classList.add('d-none'); hideErr('ctErr'); modal('mCatatan').show();
 }
+let ctAbsen = '';
+function setAbsen(a) { ctAbsen = a; document.querySelectorAll('#ctAbsen .opt').forEach((e) => e.classList.toggle('on', e.dataset.a === a)); }
 function setKat(k) {
-  ctKat = k;
+  ctKat = k; if (k !== 'Tidak Masuk') setAbsen('');
+  $('ctAbsenWrap').classList.toggle('d-none', k !== 'Tidak Masuk'); $('ctUraianReq').classList.toggle('d-none', k === 'Tidak Masuk'); $('ctUraianOpt').classList.toggle('d-none', k !== 'Tidak Masuk');
   document.querySelectorAll('#ctKat .opt').forEach((e) => e.classList.toggle('on', e.dataset.k === k));
   $('ctPrestasiWrap').classList.toggle('d-none', k !== 'Kebaikan');
 }
@@ -227,8 +230,9 @@ function renderChips() { $('ctChips').innerHTML = selSiswa.length ? selSiswa.map
 function saveCatatan() {
   hideErr('ctErr');
   if (!ctKat) return showErr('ctErr', 'Pilih kategori catatan.');
+  if (ctKat === 'Tidak Masuk' && !ctAbsen) return showErr('ctErr', 'Pilih jenis ketidakhadiran: Sakit, Izin, atau Alpa.');
   const btn = $('ctSave'); btn.disabled = true;
-  api('createCatatan', { kategori: ctKat, subkategori: $('ctPrestasi').checked ? 'Prestasi' : 'Umum', siswaIds: selSiswa.map((s) => s.SiswaID), tanggal: $('ctTgl').value, jam: $('ctJam').value,
+  api('createCatatan', { kategori: ctKat, subkategori: ctKat === 'Tidak Masuk' ? ctAbsen : ($('ctPrestasi').checked ? 'Prestasi' : 'Umum'), siswaIds: selSiswa.map((s) => s.SiswaID), tanggal: $('ctTgl').value, jam: $('ctJam').value,
     lokasi: $('ctLokasi').value, uraian: $('ctUraian').value, tindakLanjut: $('ctTL').value, requestId: ctReq })
     .then((r) => { modal('mCatatan').hide(); toast('Catatan tersimpan.' + (r && r.wa ? (r.wa.dilewati ? ' WA otomatis dilewati (lebih dari 10 siswa); kirim manual.' : ' WA ke wali: ' + r.wa.terkirim + ' terkirim' + (r.wa.gagal ? ', ' + r.wa.gagal + ' gagal' : '') + '.') : '')); if ($('page-catatan').classList.contains('active')) loadCatatan(); else go('catatan'); })
     .catch((e) => showErr('ctErr', e.message)).finally(() => { btn.disabled = false; });
@@ -305,11 +309,19 @@ function importSiswa(inp) {
  * ========================================================= */
 function initLaporan() {
   if (!$('lpBulan').value) $('lpBulan').value = wib().date.slice(0, 7);
+  fillLpTa();
   api('listSiswa').then((l) => {
     SISWA = l; const ks = isWali() && !seesAll() ? [USER.waliKelasDari] : kelasList();
     $('lpKelas').innerHTML = ks.map((k) => '<option>' + esc(k) + '</option>').join(''); fillLpSiswa();
   });
 }
+function fillLpTa() {
+  const m = String(PENG.TahunAjaran || '').match(/^(\d{4})\/(\d{4})$/), y = m ? +m[1] : new Date().getFullYear(), keep = $('lpTa').value;
+  $('lpTa').innerHTML = [y - 1, y, y + 1].map((a) => '<option value="' + a + '/' + (a + 1) + '">' + a + '/' + (a + 1) + '</option>').join(''); $('lpTa').value = keep || (y + '/' + (y + 1));
+}
+function lpJenisChange() { const sem = $('lpJenis').value !== 'bulan'; $('lpBulanWrap').classList.toggle('d-none', sem); $('lpTaWrap').classList.toggle('d-none', !sem); }
+function lpPeriode() { const j = $('lpJenis').value; return j === 'bulan' ? $('lpBulan').value : j + ':' + $('lpTa').value; }
+function periodeLabel(r) { return r.periode ? r.periode.label : bulanLong(r.bulan); }
 function fillLpSiswa() {
   const k = $('lpKelas').value;
   $('lpSiswa').innerHTML = '<option value="">Semua siswa kelas ' + esc(k) + '</option>' + SISWA.filter((s) => s.Kelas === k).map((s) => '<option value="' + s.SiswaID + '">' + esc(s.Nama) + '</option>').join('');
@@ -318,20 +330,24 @@ let LP_LAST = [];
 function downloadLaporanXls() {
   if (!LP_LAST.length) return toast('Tampilkan laporan terlebih dahulu.', true);
   if (typeof XLSX === 'undefined') return toast('Pustaka Excel belum termuat. Periksa internet lalu coba lagi.', true);
-  const rekap = [['Nama', 'NIS', 'Kelas', 'Pelanggaran', 'Kebaikan', 'Prestasi', 'Program Sekolah']], det = [['Nama', 'NIS', 'Kelas', 'Kategori', 'Tanggal', 'Jam', 'Lokasi', 'Uraian', 'Tindak lanjut', 'Pencatat']];
+  const rekap = [['Nama', 'NIS', 'Kelas', 'Periode', 'Pelanggaran', 'Kebaikan', 'Prestasi', 'Program Sekolah', 'Tidak Masuk', 'Sakit', 'Izin', 'Alpa', 'Peringkat Kebaikan (kelas)', 'Peringkat Prestasi (kelas)', 'Peringkat Program (kelas)', 'Peringkat Pelanggaran (kelas)', 'Peringkat Tidak Masuk (kelas)']];
+  const det = [['Nama', 'NIS', 'Kelas', 'Kategori', 'Jenis', 'Tanggal', 'Jam', 'Lokasi', 'Uraian', 'Tindak lanjut', 'Pencatat']], per = [['Nama', 'Kelas', 'Bulan', 'Pelanggaran', 'Kebaikan', 'Prestasi', 'Program Sekolah', 'Sakit', 'Izin', 'Alpa']];
   LP_LAST.forEach((r) => {
-    const sg = r.siswa, s = r.ringkasan; rekap.push([sg.nama, sg.nis, sg.kelas, s.Pelanggaran, s.Kebaikan, s.Prestasi, s['Program Sekolah']]);
-    ['Pelanggaran', 'Kebaikan', 'Program Sekolah'].forEach((k) => (r[k] || []).forEach((x) => det.push([sg.nama, sg.nis, sg.kelas, k === 'Kebaikan' && x.prestasi ? 'Kebaikan (Prestasi)' : k, x.tanggal, x.jam, x.lokasi, x.uraian, x.tindakLanjut, x.pencatat])));
+    const sg = r.siswa, s = r.ringkasan, pk = r.peringkat || {}, rk = (b) => (pk[b] ? pk[b].kelasRank : '');
+    rekap.push([sg.nama, sg.nis, sg.kelas, periodeLabel(r), s.Pelanggaran, s.Kebaikan, s.Prestasi, s['Program Sekolah'], s['Tidak Masuk'], s.Sakit, s.Izin, s.Alpa, rk('Kebaikan'), rk('Prestasi'), rk('Program Sekolah'), rk('Pelanggaran'), rk('Tidak Masuk')]);
+    ['Pelanggaran', 'Kebaikan', 'Program Sekolah', 'Tidak Masuk'].forEach((k) => (r[k] || []).forEach((x) => det.push([sg.nama, sg.nis, sg.kelas, k === 'Kebaikan' && x.prestasi ? 'Kebaikan (Prestasi)' : k, x.jenis || '', x.tanggal, x.jam, x.lokasi, x.uraian, x.tindakLanjut, x.pencatat])));
+    (r.rekapBulan || []).forEach((m) => per.push([sg.nama, sg.kelas, bulanLong(m.bulan), m.Pelanggaran, m.Kebaikan, m.Prestasi, m['Program Sekolah'], m.Sakit, m.Izin, m.Alpa]));
   });
   const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rekap), 'Rekap'); XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(det), 'Catatan Lengkap');
-  XLSX.writeFile(wb, 'laporan-' + LP_LAST[0].siswa.kelas + '-' + LP_LAST[0].bulan + '.xlsx');
+  if (per.length > 1) XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(per), 'Per Bulan');
+  XLSX.writeFile(wb, 'laporan-' + LP_LAST[0].siswa.kelas + '-' + String(LP_LAST[0].bulan).replace(/[:\/]/g, '-') + '.xlsx');
 }
 function loadLaporan() {
-  const bulan = $('lpBulan').value; if (!bulan) return toast('Pilih bulan laporan.', true);
+  const periode = lpPeriode(); if (!periode) return toast('Pilih periode laporan.', true);
   const sid = $('lpSiswa').value;
   $('reportArea').innerHTML = '<div class="empty">Menyusun laporan…</div>';
-  (sid ? api('getLaporanSiswa', sid, bulan).then((r) => [r]) : api('getLaporanKelas', $('lpKelas').value, bulan)).then((list) => {
-    $('reportArea').innerHTML = list.length ? list.map(reportHtml).join('') : '<div class="empty panel">Tidak ada siswa aktif di kelas ini.</div>';
+  (sid ? api('getLaporanSiswa', sid, periode).then((r) => [r]) : api('getLaporanKelas', $('lpKelas').value, periode)).then((list) => {
+    $('reportArea').innerHTML = list.length ? list.map(reportHtml).join('') + '<aside>' + devHtml('dev-print') + '</aside>' : '<div class="empty panel">Tidak ada siswa aktif di kelas ini.</div>';
     LP_LAST = list; document.querySelectorAll('.lp-dl').forEach((b) => b.classList.toggle('d-none', !list.length));
   }).catch((e) => { $('reportArea').innerHTML = '<div class="empty">' + esc(e.message) + '</div>'; });
 }
@@ -340,19 +356,93 @@ function rpTable(rows, withPrestasi) {
   return '<table class="rp-tbl"><thead><tr><th style="width:17%">Tanggal / Jam</th><th style="width:14%">Lokasi</th><th>Uraian kejadian</th><th style="width:22%">Tindak lanjut</th><th style="width:13%">Pencatat</th></tr></thead><tbody>' +
     rows.map((r) => '<tr><td>' + esc(tglLong(r.tanggal)) + (r.jam ? '<br>' + esc(r.jam) : '') + '</td><td>' + esc(r.lokasi) + '</td><td>' + (withPrestasi && r.prestasi ? '<b>[Prestasi]</b> ' : '') + esc(r.uraian) + '</td><td>' + esc(r.tindakLanjut) + '</td><td>' + esc(r.pencatat) + '</td></tr>').join('') + '</tbody></table>';
 }
+function rpAbsen(rows) {
+  if (!rows.length) return '<div class="rp-none">Tidak ada catatan tidak masuk pada periode ini.</div>';
+  return '<table class="rp-tbl"><thead><tr><th style="width:26%">Tanggal</th><th style="width:12%">Jenis</th><th>Keterangan</th><th style="width:18%">Pencatat</th></tr></thead><tbody>' +
+    rows.map((r) => '<tr><td>' + esc(tglLong(r.tanggal)) + '</td><td><b>' + esc(r.jenis) + '</b></td><td>' + (r.uraian && r.uraian !== r.jenis ? esc(r.uraian) : '-') + '</td><td>' + esc(r.pencatat) + '</td></tr>').join('') + '</tbody></table>';
+}
+function rpSemester(r) {
+  const k = ['Pelanggaran', 'Kebaikan', 'Prestasi', 'Program Sekolah', 'Sakit', 'Izin', 'Alpa'], tot = {}; k.forEach((x) => { tot[x] = 0; });
+  const body = r.rekapBulan.map((m) => { k.forEach((x) => { tot[x] += m[x]; }); return '<tr><td style="text-align:left">' + esc(bulanLong(m.bulan)) + '</td>' + k.map((x) => '<td>' + m[x] + '</td>').join('') + '</tr>'; }).join('');
+  return '<div class="rp-sec" style="background:#444">Rekap per bulan (' + esc(r.periode.label) + ')</div><table class="rp-sem"><thead><tr><th>Bulan</th><th>Pelang-<br>garan</th><th>Kebaikan</th><th>Prestasi</th><th>Program<br>Sekolah</th><th>Sakit</th><th>Izin</th><th>Alpa</th></tr></thead><tbody>' + body +
+    '<tr class="tot"><td style="text-align:left">Jumlah semester</td>' + k.map((x) => '<td>' + tot[x] + '</td>').join('') + '</tr></tbody></table>';
+}
+function rankBox(r) {
+  const pk = r.peringkat; if (!pk) return '';
+  const defs = [['Kebaikan', 'Kebaikan', '#15803d', false], ['Prestasi', 'Prestasi', '#b45309', false], ['Program Sekolah', 'Program Sekolah', '#0369a1', false], ['Pelanggaran', 'Pelanggaran', '#b91c1c', true], ['Tidak Masuk', 'Tidak Masuk', '#6d28d9', true]];
+  const cell = (d) => {
+    const x = pk[d[0]]; if (!x) return '';
+    const kosong = x.jumlah === 0;
+    return '<div class="cell" style="--cc:' + d[2] + '"><div class="l">' + d[1] + '</div><div class="n">' + (kosong ? (d[3] ? '&#10003;' : '&ndash;') : '#' + x.kelasRank) + '</div>' +
+      '<div class="d">' + (kosong ? (d[3] ? 'Tidak ada catatan' : 'Belum ada catatan') : 'dari ' + x.kelasTotal + ' siswa kelas') + '</div>' +
+      '<div class="j">Sekolah: <b>' + (kosong ? '-' : '#' + x.sekolahRank) + '</b> dari ' + x.sekolahTotal + '<br><b>' + x.jumlah + '</b> catatan</div></div>';
+  };
+  return '<div class="rp-rank"><div class="ttl">&#9733; PERINGKAT ' + esc(String(r.siswa.nama).toUpperCase()) + ' &#9733;</div><div class="cells">' + defs.map(cell).join('') + '</div>' +
+    '<div class="nt">Periode ' + esc(r.periode.label) + '. Kebaikan, Prestasi, Program Sekolah: peringkat 1 = catatan terbanyak (terbaik). Pelanggaran dan Tidak Masuk: peringkat 1 = catatan terbanyak (paling perlu perhatian). Jumlah catatan sama = peringkat sama.</div></div>';
+}
+const DEV_COLORS = ['#ff1744', '#ff9100', '#00c853', '#2979ff', '#d500f9'];
+function devHtml(cls) {
+  let i = 0;
+  const nm = 'Edoy D Hagane'.split('').map((c) => (c === ' ' ? ' ' : '<span style="color:' + DEV_COLORS[i++ % 5] + '">' + c + '</span>')).join('');
+  return '<div class="dev ' + (cls || '') + '"><small>Aplikasi dikembangkan oleh</small><b>' + nm + '</b></div>';
+}
 function reportHtml(r) {
-  const p = r.pengaturan || {}, s = r.ringkasan, sg = r.siswa, cetak = tglLong(wib().date);
-  return '<div class="report-page"><div class="rp-head"><div class="m">' + esc(p.NamaMadrasah) + '</div><div class="a">' + esc(p.AlamatMadrasah) + '</div></div>' +
-    '<div class="rp-title">LAPORAN PERKEMBANGAN SISWA</div><div class="rp-per">Periode: ' + esc(bulanLong(r.bulan)) + ' &middot; Tahun ajaran ' + esc(sg.tahunAjaran || p.TahunAjaran) + '</div>' +
+  const p = r.pengaturan || {}, s = r.ringkasan, sg = r.siswa, cetak = tglLong(wib().date), sem = r.periode.jenis === 'semester';
+  return '<div class="report-page"><div class="rp-head"><img src="logo-madrasah.png" alt="Logo madrasah"><div class="t"><div class="m">' + esc(p.NamaMadrasah) + '</div><div class="a">' + esc(p.AlamatMadrasah) + '</div></div><div style="width:64px"></div></div>' +
+    '<div class="rp-title">LAPORAN PERKEMBANGAN SISWA</div><div class="rp-per">Periode: ' + esc(r.periode.label) + ' &middot; Tahun ajaran ' + esc(r.periode.ta || sg.tahunAjaran || p.TahunAjaran) + '</div>' +
     '<table class="rp-id"><tr><td>Nama siswa</td><td>: <b>' + esc(sg.nama) + '</b></td><td>Kelas</td><td>: ' + esc(sg.kelas) + '</td></tr><tr><td>NIS</td><td>: ' + esc(sg.nis) + '</td><td>Wali kelas</td><td>: ' + esc(r.waliKelas || '-') + '</td></tr></table>' +
-    '<div class="rp-sum"><div><b>' + s.Pelanggaran + '</b>Pelanggaran</div><div><b>' + s.Kebaikan + '</b>Kebaikan</div><div><b>' + s.Prestasi + '</b>Prestasi</div><div><b>' + s['Program Sekolah'] + '</b>Program Sekolah</div></div>' +
+    rankBox(r) +
+    '<div class="rp-sum"><div><b>' + s.Pelanggaran + '</b>Pelanggaran</div><div><b>' + s.Kebaikan + '</b>Kebaikan</div><div><b>' + s.Prestasi + '</b>Prestasi</div><div><b>' + s['Program Sekolah'] + '</b>Program Sekolah</div><div><b>' + s['Tidak Masuk'] + '</b>Tidak Masuk<br><span style="font-size:9px">S ' + s.Sakit + ' &middot; I ' + s.Izin + ' &middot; A ' + s.Alpa + '</span></div></div>' +
+    (sem ? rpSemester(r) : '') +
     '<div class="rp-sec Pelanggaran">A. Pelanggaran</div>' + rpTable(r.Pelanggaran) +
     '<div class="rp-sec Kebaikan">B. Kebaikan</div>' + rpTable(r.Kebaikan, true) +
     '<div class="rp-sec Program">C. Program Sekolah</div>' + rpTable(r['Program Sekolah']) +
+    '<div class="rp-sec TidakMasuk">D. Catatan Tidak Masuk (Sakit / Izin / Alpa)</div>' + rpAbsen(r['Tidak Masuk']) +
     '<div class="rp-sec" style="background:#444">Catatan wali kelas</div><div class="rp-note" contenteditable="true" spellcheck="false"></div>' +
     '<div class="rp-sign"><div>Wali Kelas<div class="sp"></div><b>' + esc(r.waliKelas || '................') + '</b></div><div>Orang Tua / Wali<div class="sp"></div>(................)</div><div>Kepala Madrasah<div class="sp"></div><b>' + esc(p.NamaKepala || '................') + '</b>' + (p.NIPKepala ? '<br>NIP. ' + esc(p.NIPKepala) : '') + '</div></div>' +
-    '<div style="font-size:9.5px;color:#777;margin-top:8px">Dicetak ' + esc(cetak) + ' &middot; My Eye</div></div>';
+    '<div style="font-size:9.5px;color:#777;margin-top:8px">Dicetak ' + esc(cetak) + ' &middot; My Eye</div>' + '<div class="rp-dev">' + devHtml() + '</div></div>';
 }
+
+/* =========================================================
+ *  BACKUP & PULIHKAN
+ * ========================================================= */
+let BK_DATA = null;
+function saveFile(name, text) { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' })); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500); }
+function bkNama(tag) { const n = wib(); return 'backup-myeye' + (tag ? '-' + tag : '') + '-' + n.date + '-' + n.time.replace(':', '') + '.json'; }
+function downloadBackup(tag) {
+  toast('Menyiapkan backup…');
+  return api('backupData').then((d) => {
+    saveFile(bkNama(tag), JSON.stringify(d));
+    const n = Object.keys(d.sheets).reduce((a, k) => a + d.sheets[k].rows.length, 0);
+    try { localStorage.setItem('myeye_bk', wib().date + ' ' + wib().time + ' (' + n + ' baris)'); } catch (e) {}
+    bkShowLast(); toast('Backup diunduh (' + n + ' baris data).'); return d;
+  }).catch((e) => { toast(e.message, true); throw e; });
+}
+function bkShowLast() { let v = ''; try { v = localStorage.getItem('myeye_bk') || ''; } catch (e) {} $('bkLast').textContent = v ? 'Backup terakhir diunduh dari perangkat ini: ' + v : 'Belum ada backup yang diunduh dari perangkat ini.'; }
+function bkPilih() {
+  const f = $('bkFile').files[0]; BK_DATA = null; $('bkBtn').disabled = true; $('bkInfo').textContent = '';
+  if (!f) return;
+  const rd = new FileReader();
+  rd.onload = () => {
+    try {
+      const d = JSON.parse(rd.result); if (d.app !== 'MyEye' || !d.sheets) throw new Error('x');
+      BK_DATA = d; const n = Object.keys(d.sheets).reduce((a, k) => a + (d.sheets[k].rows || []).length, 0);
+      $('bkInfo').innerHTML = '<b>Berkas valid.</b> Dibuat ' + esc(d.waktu || '-') + ' &middot; ' + esc(d.madrasah || '') + ' &middot; ' + n + ' baris (siswa ' + ((d.sheets.Siswa || { rows: [] }).rows.length) + ', catatan ' + ((d.sheets.Catatan || { rows: [] }).rows.length) + ').'; $('bkBtn').disabled = false;
+    } catch (e) { $('bkInfo').innerHTML = '<span class="text-danger">Berkas bukan backup My Eye yang valid.</span>'; }
+  };
+  rd.readAsText(f);
+}
+function restoreBackup() {
+  if (!BK_DATA) return;
+  const k = prompt('PERHATIAN: semua data saat ini akan diganti dengan backup tanggal ' + (BK_DATA.waktu || '-') + '.\n\nKetik PULIHKAN untuk melanjutkan:'); if (k !== 'PULIHKAN') return toast('Pemulihan dibatalkan.', true);
+  $('bkBtn').disabled = true;
+  downloadBackup('sebelum-pulih').catch(() => null).then((ok) => {
+    if (!ok && !confirm('Backup pengaman gagal diunduh. Tetap lanjutkan memulihkan?')) { $('bkBtn').disabled = false; return; }
+    toast('Memulihkan data…');
+    return api('restoreData', BK_DATA, 'PULIHKAN').then((r) => { toast('Berhasil dipulihkan: ' + r.baris + ' baris. Memuat ulang…'); setTimeout(() => location.reload(), 1800); });
+  }).catch((e) => { toast(e.message, true); $('bkBtn').disabled = false; });
+}
+function injectDev() { document.querySelectorAll('.dev-slot').forEach((e) => { e.innerHTML = devHtml(); }); }
 
 /* =========================================================
  *  PENGGUNA, LOG, PENGATURAN
@@ -494,6 +584,7 @@ function waLoadRiw() {
 
 /* ---------- mulai ---------- */
 window.addEventListener('DOMContentLoaded', () => {
+  injectDev();
   const t = localStorage.getItem('sicapsi_token');
   if (t) { TOKEN = t; api('me').then((d) => enterApp(d.user, d.pengaturan)).catch(() => forceLogout()); }
   if ('serviceWorker' in navigator && location.protocol.startsWith('http') && !window.SICAPSI_API) navigator.serviceWorker.register('sw.js').catch(() => {});
