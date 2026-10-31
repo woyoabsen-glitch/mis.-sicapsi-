@@ -161,6 +161,26 @@ body{background:var(--cream); color:var(--text); margin:0;}
 .wa-pane{display:none;} .wa-pane.on{display:block;}
 .login-card .sub{margin:0 0 18px;}
 .brand-logo{width:44px; height:44px; border-radius:12px; background:#fff; padding:2px; object-fit:contain; flex:none;}
+#ctKat{grid-template-columns:repeat(2,1fr);}
+.kj.k-TidakMasuk{border-left-color:#7c3aed;} .bd.TidakMasuk{background:#7c3aed;} .seg .opt.on.TidakMasuk{background:#ede9fe; border-color:#7c3aed; color:#5b21b6;}
+.rp-sec.TidakMasuk{background:#6d28d9;}
+/* kredit developer */
+.dev{text-align:center; line-height:1.15;} .dev small{display:block; font-size:11px; color:#6b7280; letter-spacing:.4px;}
+.dev b{font-family:'Poppins',sans-serif; font-weight:800; font-size:22px; letter-spacing:.5px; text-shadow:0 1px 0 rgba(0,0,0,.12);}
+.foot .dev{padding:6px 0 4px;} .login-foot .dev b{font-size:20px;}
+/* laporan: kop, peringkat */
+.rp-head{display:flex; align-items:center; gap:12px; text-align:left;} .rp-head img{width:64px; height:auto; flex:none;} .rp-head .t{flex:1; text-align:center;}
+.rp-rank{margin:12px 0; border:3px solid #b8892b; border-radius:12px; background:linear-gradient(180deg,#0f4a28,#14532d); padding:8px; color:#fff; box-shadow:0 0 0 2px #14532d; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
+.rp-rank .ttl{text-align:center; font-weight:800; font-size:14px; letter-spacing:1.2px; color:#ffe27a; margin-bottom:6px;}
+.rp-rank .cells{display:grid; grid-template-columns:repeat(5,1fr); gap:6px;}
+.rp-rank .cell{background:#fff; color:#111; border-radius:8px; text-align:center; padding:6px 3px; border-top:6px solid var(--cc);}
+.rp-rank .cell .l{font-size:9.5px; font-weight:700; color:var(--cc); text-transform:uppercase;} .rp-rank .cell .n{font-size:30px; font-weight:800; line-height:1.05; color:var(--cc);}
+.rp-rank .cell .d{font-size:9px; color:#333;} .rp-rank .cell .j{font-size:9px; color:#666; border-top:1px dashed #bbb; margin-top:3px; padding-top:2px;}
+.rp-rank .nt{font-size:8.5px; color:#e8f5e9; margin-top:5px; text-align:center;}
+.rp-sem{width:100%; border-collapse:collapse; font-size:10.5px; margin:4px 0 6px;} .rp-sem th,.rp-sem td{border:1px solid #888; padding:2px 4px; text-align:center;} .rp-sem th{background:#eee;} .rp-sem tr.tot td{font-weight:700; background:#f5f1e3;}
+.rp-dev{margin-top:10px; border-top:1px solid #ddd; padding-top:4px;} .dev-print{display:none;}
+.report-page,.rp-sec,.rp-rank,.rp-sum div{-webkit-print-color-adjust:exact; print-color-adjust:exact;}
+@media print{ .report-page:last-of-type{page-break-after:auto !important;} .rp-sec{break-after:avoid; page-break-after:avoid;} .rp-tbl tr,.rp-rank,.rp-sign{break-inside:avoid; page-break-inside:avoid;} body{background:#fff !important;} .rp-dev{display:none;} .dev-print{display:block; position:fixed; bottom:0; left:0; right:0; background:#fff; padding:2px 0 0; border-top:1px solid #ccc;} .dev-print b{font-size:18px;} .report-page{padding-bottom:16mm !important;} }
 </style>
 </head>
 <body>
@@ -185,7 +205,7 @@ body{background:var(--cream); color:var(--text); margin:0;}
         <button type="button" class="eye" onclick="togglePw('lgPass',this)" aria-label="Tampilkan password"><i class="bi bi-eye"></i></button></div>
       <button class="btn btn-gold" id="lgBtn" type="submit">Masuk <i class="bi bi-arrow-right ms-1"></i></button>
     </form>
-    <div class="login-foot">&copy; 2026 My Eye &middot; Madrasah Ibtidaiyah Raudlatul Ulum Al Marzuqi</div>
+    <div class="login-foot"><span class="dev-slot"></span><div style="margin-top:6px">&copy; 2026 My Eye &middot; Madrasah Ibtidaiyah Raudlatul Ulum Al Marzuqi</div></div>
   </div>
 </div>
 
@@ -251,7 +271,7 @@ body{background:var(--cream); color:var(--text); margin:0;}
           <div class="d-flex flex-wrap gap-2 align-items-end">
             <button class="btn btn-gold" style="width:auto;padding:0 18px;height:42px;" onclick="openCatatan()"><i class="bi bi-plus-lg"></i> Buat Catatan</button>
             <div><label class="form-label">Bulan</label><input type="month" class="form-control form-control-sm" id="cfBulan" onchange="loadCatatan()"></div>
-            <div><label class="form-label">Kategori</label><select class="form-select form-select-sm" id="cfKat" onchange="loadCatatan()"><option value="">Semua</option><option>Pelanggaran</option><option>Kebaikan</option><option>Program Sekolah</option></select></div>
+            <div><label class="form-label">Kategori</label><select class="form-select form-select-sm" id="cfKat" onchange="loadCatatan()"><option value="">Semua</option><option>Pelanggaran</option><option>Kebaikan</option><option>Program Sekolah</option><option>Tidak Masuk</option></select></div>
             <div><label class="form-label">Kelas</label><select class="form-select form-select-sm" id="cfKelas" onchange="loadCatatan()"><option value="">Semua</option></select></div>
             <div class="flex-grow-1" style="min-width:150px"><label class="form-label">Cari</label><input class="form-control form-control-sm" id="cfQ" placeholder="Nama siswa / uraian" oninput="debounceCatatan()"></div>
             <div class="form-check mb-1" id="cfBatalWrap"><input class="form-check-input" type="checkbox" id="cfBatal" onchange="loadCatatan()"><label class="form-check-label small" for="cfBatal">Tampilkan yang dibatalkan</label></div>
@@ -280,7 +300,9 @@ body{background:var(--cream); color:var(--text); margin:0;}
       <div class="page" id="page-laporan">
         <div class="panel no-print">
           <div class="d-flex flex-wrap gap-2 align-items-end">
-            <div><label class="form-label">Bulan</label><input type="month" class="form-control form-control-sm" id="lpBulan"></div>
+            <div><label class="form-label">Periode</label><select class="form-select form-select-sm" id="lpJenis" onchange="lpJenisChange()"><option value="bulan">Bulanan</option><option value="S1">Semester Ganjil (Jul-Des)</option><option value="S2">Semester Genap (Jan-Jun)</option></select></div>
+            <div id="lpBulanWrap"><label class="form-label">Bulan</label><input type="month" class="form-control form-control-sm" id="lpBulan"></div>
+            <div id="lpTaWrap" class="d-none"><label class="form-label">Tahun ajaran</label><select class="form-select form-select-sm" id="lpTa"></select></div>
             <div><label class="form-label">Kelas</label><select class="form-select form-select-sm" id="lpKelas" onchange="fillLpSiswa()"></select></div>
             <div><label class="form-label">Siswa</label><select class="form-select form-select-sm" id="lpSiswa"></select></div>
             <button class="btn btn-gold" style="width:auto;padding:0 18px;height:36px;" onclick="loadLaporan()"><i class="bi bi-file-earmark-text"></i> Tampilkan</button>
@@ -381,9 +403,23 @@ body{background:var(--cream); color:var(--text); margin:0;}
           <div class="mb-3"><label class="form-label">Daftar lokasi (pisahkan dengan koma)</label><input class="form-control" id="pgLokasi"></div>
           <button class="btn btn-gold" style="max-width:220px" onclick="savePengaturan()">Simpan</button>
         </div>
+        <div class="panel" style="max-width:640px">
+          <h5>Cadangan Data (Backup)</h5>
+          <p class="small mb-2">Backup berisi <b>seluruh data</b>: siswa, catatan, pengguna (termasuk sandi terenkripsi), pengaturan, dan log. Simpan berkasnya di tempat aman (Google Drive pribadi / flashdisk) dan jangan dibagikan. Token WhatsApp tidak ikut tersimpan.</p>
+          <div class="d-flex flex-wrap gap-2 mb-2">
+            <button class="btn btn-gold" style="width:auto;padding:0 18px;height:44px" onclick="downloadBackup()"><i class="bi bi-cloud-arrow-down-fill me-1"></i> Unduh Backup Sekarang</button>
+          </div>
+          <div class="meta mb-3" id="bkLast"></div>
+          <hr>
+          <h6 style="margin-top:6px">Pulihkan dari Backup</h6>
+          <div class="alert alert-warning py-2 small">Memulihkan akan <b>mengganti semua data saat ini</b> dengan isi berkas backup. Sistem otomatis mengunduh backup data saat ini lebih dulu sebagai pengaman.</div>
+          <input type="file" class="form-control mb-2" id="bkFile" accept=".json,application/json" onchange="bkPilih()">
+          <div class="meta mb-2" id="bkInfo"></div>
+          <button class="btn btn-outline-danger" id="bkBtn" onclick="restoreBackup()" disabled><i class="bi bi-arrow-counterclockwise me-1"></i> Pulihkan Data</button>
+        </div>
       </div>
 
-      <div class="foot">&copy; 2026 My Eye &middot; MI Raudlatul Ulum Al Marzuqi</div>
+      <div class="foot"><span class="dev-slot"></span>&copy; 2026 My Eye &middot; MI Raudlatul Ulum Al Marzuqi</div>
     </div>
   </div>
 </div>
@@ -397,7 +433,10 @@ body{background:var(--cream); color:var(--text); margin:0;}
       <div class="opt Pelanggaran" data-k="Pelanggaran" onclick="setKat('Pelanggaran')"><i class="bi bi-exclamation-triangle-fill"></i>Pelanggaran</div>
       <div class="opt Kebaikan" data-k="Kebaikan" onclick="setKat('Kebaikan')"><i class="bi bi-heart-fill"></i>Kebaikan</div>
       <div class="opt Program" data-k="Program Sekolah" onclick="setKat('Program Sekolah')"><i class="bi bi-mortarboard-fill"></i>Program Sekolah</div>
+      <div class="opt TidakMasuk" data-k="Tidak Masuk" onclick="setKat('Tidak Masuk')"><i class="bi bi-person-x-fill"></i>Tidak Masuk</div>
     </div>
+    <div class="mb-3 d-none" id="ctAbsenWrap"><label class="form-label">Jenis ketidakhadiran <span class="text-danger">*</span></label>
+      <div class="seg" id="ctAbsen" style="grid-template-columns:repeat(3,1fr)"><div class="opt TidakMasuk" data-a="Sakit" onclick="setAbsen('Sakit')"><i class="bi bi-thermometer-half"></i>Sakit</div><div class="opt TidakMasuk" data-a="Izin" onclick="setAbsen('Izin')"><i class="bi bi-envelope-paper-fill"></i>Izin</div><div class="opt TidakMasuk" data-a="Alpa" onclick="setAbsen('Alpa')"><i class="bi bi-x-octagon-fill"></i>Alpa</div></div></div>
     <div class="form-check mb-3 d-none" id="ctPrestasiWrap"><input class="form-check-input" type="checkbox" id="ctPrestasi"><label class="form-check-label small" for="ctPrestasi"><b>Tandai sebagai prestasi</b> (lomba, juara, penghargaan)</label></div>
     <label class="form-label">Siswa yang terlibat <span class="text-muted fw-normal">(boleh lebih dari satu)</span></label>
     <div id="ctChips" class="mb-1"></div>
@@ -407,7 +446,7 @@ body{background:var(--cream); color:var(--text); margin:0;}
       <div class="col-6"><label class="form-label">Tanggal kejadian</label><input type="date" class="form-control" id="ctTgl"></div>
       <div class="col-6"><label class="form-label">Jam</label><input type="time" class="form-control" id="ctJam"></div>
       <div class="col-12"><label class="form-label">Lokasi / kegiatan</label><input class="form-control" id="ctLokasi" list="lokasiList" placeholder="mis. Lapangan"><datalist id="lokasiList"></datalist></div>
-      <div class="col-12"><label class="form-label">Uraian kejadian <span class="text-danger">*</span></label><textarea class="form-control" id="ctUraian" rows="4" placeholder="Tuliskan fakta yang diketahui dengan bahasa yang jelas dan sederhana."></textarea></div>
+      <div class="col-12"><label class="form-label">Uraian kejadian <span class="text-danger" id="ctUraianReq">*</span><span class="text-muted fw-normal d-none" id="ctUraianOpt"> (opsional untuk Tidak Masuk)</span></label><textarea class="form-control" id="ctUraian" rows="4" placeholder="Tuliskan fakta yang diketahui dengan bahasa yang jelas dan sederhana."></textarea></div>
       <div class="col-12"><label class="form-label">Tindak lanjut <span class="text-muted fw-normal">(opsional)</span></label><textarea class="form-control" id="ctTL" rows="2"></textarea></div>
     </div>
     <div class="alert alert-danger py-2 small mt-3 d-none" id="ctErr"></div>
