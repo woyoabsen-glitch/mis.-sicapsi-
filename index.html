@@ -172,15 +172,21 @@ body{background:var(--cream); color:var(--text); margin:0;}
 .rp-head{display:flex; align-items:center; gap:12px; text-align:left;} .rp-head img{width:64px; height:auto; flex:none;} .rp-head .t{flex:1; text-align:center;}
 .rp-rank{margin:12px 0; border:3px solid #b8892b; border-radius:12px; background:linear-gradient(180deg,#0f4a28,#14532d); padding:8px; color:#fff; box-shadow:0 0 0 2px #14532d; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
 .rp-rank .ttl{text-align:center; font-weight:800; font-size:14px; letter-spacing:1.2px; color:#ffe27a; margin-bottom:6px;}
-.rp-rank .cells{display:grid; grid-template-columns:repeat(5,1fr); gap:6px;}
+.rp-rank .cells{display:grid; grid-template-columns:repeat(4,1fr); gap:6px;}
 .rp-rank .cell{background:#fff; color:#111; border-radius:8px; text-align:center; padding:6px 3px; border-top:6px solid var(--cc);}
 .rp-rank .cell .l{font-size:9.5px; font-weight:700; color:var(--cc); text-transform:uppercase;} .rp-rank .cell .n{font-size:30px; font-weight:800; line-height:1.05; color:var(--cc);}
 .rp-rank .cell .d{font-size:9px; color:#333;} .rp-rank .cell .j{font-size:9px; color:#666; border-top:1px dashed #bbb; margin-top:3px; padding-top:2px;}
 .rp-rank .nt{font-size:8.5px; color:#e8f5e9; margin-top:5px; text-align:center;}
 .rp-sem{width:100%; border-collapse:collapse; font-size:10.5px; margin:4px 0 6px;} .rp-sem th,.rp-sem td{border:1px solid #888; padding:2px 4px; text-align:center;} .rp-sem th{background:#eee;} .rp-sem tr.tot td{font-weight:700; background:#f5f1e3;}
 .rp-dev{margin-top:10px; border-top:1px solid #ddd; padding-top:4px;} .dev-print{display:none;}
-.report-page,.rp-sec,.rp-rank,.rp-sum div{-webkit-print-color-adjust:exact; print-color-adjust:exact;}
+.report-page,.rp-sec,.rp-rank,.rp-sum div,.ind{-webkit-print-color-adjust:exact; print-color-adjust:exact;}
 @media print{ .report-page:last-of-type{page-break-after:auto !important;} .rp-sec{break-after:avoid; page-break-after:avoid;} .rp-tbl tr,.rp-rank,.rp-sign{break-inside:avoid; page-break-inside:avoid;} body{background:#fff !important;} .rp-dev{display:none;} .dev-print{display:block; position:fixed; bottom:0; left:0; right:0; background:#fff; padding:2px 0 0; border-top:1px solid #ccc;} .dev-print b{font-size:18px;} .report-page{padding-bottom:16mm !important;} }
+.bg-abs{background:linear-gradient(135deg,#a78bfa,#6d28d9);}
+.ind{display:inline-block; font-size:10.5px; font-weight:700; padding:1px 8px; border-radius:999px; color:#fff; white-space:nowrap;}
+.ind.lo{background:#dc2626;} .ind.mid{background:#d97706;} .ind.hi{background:#16a34a;}
+.ind-pick{display:flex; gap:4px; flex-wrap:wrap; margin:4px 0 8px;} .ind-pick button{border:1.5px solid var(--line); background:#faf6ea; border-radius:999px; font-size:11px; font-weight:600; padding:2px 10px;}
+.ind-pick button.on.lo{background:#dc2626; color:#fff; border-color:#dc2626;} .ind-pick button.on.mid{background:#d97706; color:#fff; border-color:#d97706;} .ind-pick button.on.hi{background:#16a34a; color:#fff; border-color:#16a34a;} .ind-pick .asp{font-size:11px; font-weight:700; color:#555; min-width:130px; align-self:center;}
+.pm-box{border:1px solid #bbb; border-radius:6px; padding:4px 8px; margin:4px 0; font-size:10.5px;}
 </style>
 </head>
 <body>
@@ -350,7 +356,7 @@ body{background:var(--cream); color:var(--text); margin:0;}
             <div><label class="form-label">Bulan</label><input type="month" class="form-control" id="waLpBulan"></div>
             <div><label class="form-label">Kelas</label><select class="form-select" id="waLpKelas"></select></div>
           </div>
-          <div class="meta mb-2">Wali menerima ringkasan jumlah catatan anaknya pada bulan itu (kebaikan, prestasi, pelanggaran, program sekolah). Isi pesan dapat diubah di tab Pengaturan.</div>
+          <div class="meta mb-2">Wali menerima ringkasan jumlah catatan anaknya pada bulan itu (kebaikan, prestasi, pelanggaran, tidak masuk, dan capaian program sekolah). Isi pesan dapat diubah di tab Pengaturan.</div>
           <button class="btn btn-gold" style="max-width:260px" id="waBtnLap" onclick="waKirimLap()"><i class="bi bi-send-fill me-1"></i> Kirim ke Wali Kelas Ini</button>
           <div class="mt-3 d-none" id="waProgLap"></div>
         </div>
@@ -380,7 +386,7 @@ body{background:var(--cream); color:var(--text); margin:0;}
             <div class="mb-2"><label class="form-label">Pesan catatan siswa</label><textarea class="form-control" id="waTplCat" rows="8"></textarea>
               <div class="meta">Variabel: {wali} {siswa} {kelas} {kategori} {tanggal} {jam} {uraian} {tindaklanjut} {pencatat} {madrasah}</div></div>
             <div class="mb-3"><label class="form-label">Pesan laporan bulanan</label><textarea class="form-control" id="waTplLap" rows="8"></textarea>
-              <div class="meta">Variabel: {wali} {siswa} {kelas} {bulan} {kebaikan} {prestasi} {pelanggaran} {program} {madrasah}</div></div>
+              <div class="meta">Variabel: {wali} {siswa} {kelas} {bulan} {kebaikan} {prestasi} {pelanggaran} {tidakmasuk} {program} {bsh} {berkembang} {bb} {madrasah}</div></div>
             <button class="btn btn-gold" style="max-width:200px" onclick="waSimpanAturan()">Simpan</button>
           </div>
         </div>
@@ -401,6 +407,7 @@ body{background:var(--cream); color:var(--text); margin:0;}
             <div class="col-6"><label class="form-label">NIP Kepala</label><input class="form-control" id="pgNip"></div></div>
           <div class="mb-2"><label class="form-label">Nama Kepala Madrasah (untuk tanda tangan laporan)</label><input class="form-control" id="pgKepala"></div>
           <div class="mb-3"><label class="form-label">Daftar lokasi (pisahkan dengan koma)</label><input class="form-control" id="pgLokasi"></div>
+          <div class="mb-3"><label class="form-label">Daftar saran materi / kode pelajaran (pisahkan dengan koma)</label><input class="form-control" id="pgProgram" placeholder="mis. Tahfidz Juz 30, Praktik Ibadah"><div class="meta">Muncul sebagai saran saat mengisi materi Program Unggulan.</div></div>
           <button class="btn btn-gold" style="max-width:220px" onclick="savePengaturan()">Simpan</button>
         </div>
         <div class="panel" style="max-width:640px">
@@ -432,11 +439,15 @@ body{background:var(--cream); color:var(--text); margin:0;}
     <div class="seg mb-2" id="ctKat">
       <div class="opt Pelanggaran" data-k="Pelanggaran" onclick="setKat('Pelanggaran')"><i class="bi bi-exclamation-triangle-fill"></i>Pelanggaran</div>
       <div class="opt Kebaikan" data-k="Kebaikan" onclick="setKat('Kebaikan')"><i class="bi bi-heart-fill"></i>Kebaikan</div>
-      <div class="opt Program" data-k="Program Sekolah" onclick="setKat('Program Sekolah')"><i class="bi bi-mortarboard-fill"></i>Program Sekolah</div>
+      <div class="opt Program" data-k="Program Sekolah" onclick="setKat('Program Sekolah')"><i class="bi bi-mortarboard-fill"></i>Program Unggulan</div>
       <div class="opt TidakMasuk" data-k="Tidak Masuk" onclick="setKat('Tidak Masuk')"><i class="bi bi-person-x-fill"></i>Tidak Masuk</div>
     </div>
     <div class="mb-3 d-none" id="ctAbsenWrap"><label class="form-label">Jenis ketidakhadiran <span class="text-danger">*</span></label>
       <div class="seg" id="ctAbsen" style="grid-template-columns:repeat(3,1fr)"><div class="opt TidakMasuk" data-a="Sakit" onclick="setAbsen('Sakit')"><i class="bi bi-thermometer-half"></i>Sakit</div><div class="opt TidakMasuk" data-a="Izin" onclick="setAbsen('Izin')"><i class="bi bi-envelope-paper-fill"></i>Izin</div><div class="opt TidakMasuk" data-a="Alpa" onclick="setAbsen('Alpa')"><i class="bi bi-x-octagon-fill"></i>Alpa</div></div></div>
+    <div class="mb-3 d-none" id="ctMateriWrap"><label class="form-label">Program unggulan <span class="text-danger">*</span></label>
+      <div class="seg" id="ctProg" style="grid-template-columns:repeat(2,1fr)"><div class="opt Program" data-p="Bahasa Inggris" onclick="setProg('Bahasa Inggris')"><i class="bi bi-translate"></i>Bahasa Inggris</div><div class="opt Program" data-p="Matematika" onclick="setProg('Matematika')"><i class="bi bi-calculator"></i>Matematika</div></div>
+      <label class="form-label mt-2">Materi / kode pelajaran <span class="text-danger">*</span></label><input class="form-control" id="ctMateri" list="materiList" maxlength="200" placeholder="mis. Unit 3 - Colours / Perkalian 2-5"><datalist id="materiList"></datalist>
+      <div class="meta mt-1">Dinilai oleh guru pendamping. Bahasa Inggris: Academic Achievement (NI/IP/A) + Attitude (LA/A). Matematika: Keterlibatan Belajar (BB/MB/BSH) + Ketepatan Capaian (C/B/A). Tidak masuk klasemen.</div></div>
     <div class="form-check mb-3 d-none" id="ctPrestasiWrap"><input class="form-check-input" type="checkbox" id="ctPrestasi"><label class="form-check-label small" for="ctPrestasi"><b>Tandai sebagai prestasi</b> (lomba, juara, penghargaan)</label></div>
     <label class="form-label">Siswa yang terlibat <span class="text-muted fw-normal">(boleh lebih dari satu)</span></label>
     <div id="ctChips" class="mb-1"></div>
@@ -446,7 +457,7 @@ body{background:var(--cream); color:var(--text); margin:0;}
       <div class="col-6"><label class="form-label">Tanggal kejadian</label><input type="date" class="form-control" id="ctTgl"></div>
       <div class="col-6"><label class="form-label">Jam</label><input type="time" class="form-control" id="ctJam"></div>
       <div class="col-12"><label class="form-label">Lokasi / kegiatan</label><input class="form-control" id="ctLokasi" list="lokasiList" placeholder="mis. Lapangan"><datalist id="lokasiList"></datalist></div>
-      <div class="col-12"><label class="form-label">Uraian kejadian <span class="text-danger" id="ctUraianReq">*</span><span class="text-muted fw-normal d-none" id="ctUraianOpt"> (opsional untuk Tidak Masuk)</span></label><textarea class="form-control" id="ctUraian" rows="4" placeholder="Tuliskan fakta yang diketahui dengan bahasa yang jelas dan sederhana."></textarea></div>
+      <div class="col-12"><label class="form-label">Uraian kejadian <span class="text-danger" id="ctUraianReq">*</span><span class="text-muted fw-normal d-none" id="ctUraianOpt"> (opsional)</span></label><textarea class="form-control" id="ctUraian" rows="4" placeholder="Tuliskan fakta yang diketahui dengan bahasa yang jelas dan sederhana."></textarea></div>
       <div class="col-12"><label class="form-label">Tindak lanjut <span class="text-muted fw-normal">(opsional)</span></label><textarea class="form-control" id="ctTL" rows="2"></textarea></div>
     </div>
     <div class="alert alert-danger py-2 small mt-3 d-none" id="ctErr"></div>
