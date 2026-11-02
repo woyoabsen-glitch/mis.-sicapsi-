@@ -6,8 +6,18 @@ const API_URL = window.SICAPSI_API || 'https://script.google.com/macros/s/AKfycb
 
 let TOKEN = null, USER = null, PENG = {}, SISWA = [], DASH = null;
 let boardSel = 'Kebaikan', scopeSel = 'kelas';
-const BOARD_COLOR = { Kebaikan: '#16a34a', Pelanggaran: '#dc2626', Prestasi: '#d97706', 'Program Sekolah': '#0369a1' };
-const BOARD_ICON = { Kebaikan: 'bi-heart-fill', Pelanggaran: 'bi-exclamation-triangle-fill', Prestasi: 'bi-award-fill', 'Program Sekolah': 'bi-mortarboard-fill' };
+const BOARD_COLOR = { Kebaikan: '#16a34a', Pelanggaran: '#dc2626', Prestasi: '#d97706', 'Tidak Masuk': '#7c3aed' };
+const BOARD_ICON = { Kebaikan: 'bi-heart-fill', Pelanggaran: 'bi-exclamation-triangle-fill', Prestasi: 'bi-award-fill', 'Tidak Masuk': 'bi-person-x-fill' };
+const PROGRAM = {
+  'Bahasa Inggris': { a1: { nama: 'Academic Achievement', opsi: ['NI', 'IP', 'A'] }, a2: { nama: 'Attitude', opsi: ['LA', 'A'] } },
+  'Matematika': { a1: { nama: 'Keterlibatan Belajar', opsi: ['BB', 'MB', 'BSH'] }, a2: { nama: 'Ketepatan Capaian', opsi: ['C', 'B', 'A'] } }
+};
+const LEGEND = {
+  'Bahasa Inggris': 'NI = Need Improvement (butuh peningkatan) · IP = In Progress (sedang berkembang) · A = Achieved (tercapai) · Attitude: LA = Less Active (kurang aktif) · A = Active (aktif)',
+  'Matematika': 'Keterlibatan: BB = Belum Berkembang · MB = Mulai Berkembang · BSH = Berkembang Sesuai Harapan · Ketepatan: C = Perlu Bimbingan · B = Cukup Tepat · A = Sangat Tepat'
+};
+const lvCls = (n, i) => (i <= 0 ? 'lo' : (i >= n - 1 ? 'hi' : 'mid'));
+const nilaiBadge = (prog, asp, v) => { const d = PROGRAM[prog]; if (!d || !v) return v ? '<span class="ind mid">' + esc(v) + '</span>' : ''; const o = d[asp].opsi; return '<span class="ind ' + lvCls(o.length, o.indexOf(v)) + '" title="' + esc(d[asp].nama) + '">' + esc(v) + '</span>'; };
 const BULAN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 const HARI = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 
@@ -123,9 +133,9 @@ function renderDashboard() {
   const d = DASH, k = d.kartu;
   $('dbRangeText').textContent = tglLong(d.range.from) + ' – ' + tglLong(d.range.to);
   const card = (b, cls, label) => '<div class="col-6 col-lg"><div class="stat" onclick="selBoard(\'' + b + '\')"><div class="ic ' + cls + '"><i class="bi ' + BOARD_ICON[b] + '"></i></div><div><div class="n">' + k[b].kejadian + '</div><div class="l">' + label + '</div><div class="s">' + k[b].siswa + ' siswa</div></div></div></div>';
-  $('dbCards').innerHTML = card('Pelanggaran', 'bg-pel', 'Pelanggaran') + card('Kebaikan', 'bg-keb', 'Kebaikan') + card('Prestasi', 'bg-pre', 'Prestasi') + card('Program Sekolah', 'bg-prog', 'Program Sekolah') +
+  $('dbCards').innerHTML = card('Pelanggaran', 'bg-pel', 'Pelanggaran') + card('Kebaikan', 'bg-keb', 'Kebaikan') + card('Prestasi', 'bg-pre', 'Prestasi') + card('Tidak Masuk', 'bg-abs', 'Tidak Masuk') +
     '<div class="col-6 col-lg"><div class="stat" onclick="go(\'siswa\')"><div class="ic bg-sis"><i class="bi bi-people-fill"></i></div><div><div class="n">' + d.siswaAktif + '</div><div class="l">Siswa aktif</div><div class="s">' + d.kelasList.length + ' kelas</div></div></div></div>';
-  $('dbBoardTabs').innerHTML = ['Kebaikan', 'Pelanggaran', 'Prestasi', 'Program Sekolah'].map((b) => '<div class="tab-g ' + (b === boardSel ? 'active' : '') + '" onclick="selBoard(\'' + b + '\')">' + b + '</div>').join('');
+  $('dbBoardTabs').innerHTML = ['Kebaikan', 'Pelanggaran', 'Prestasi', 'Tidak Masuk'].map((b) => '<div class="tab-g ' + (b === boardSel ? 'active' : '') + '" onclick="selBoard(\'' + b + '\')">' + b + '</div>').join('');
   $('dbScopeTabs').innerHTML = [['kelas', 'Per Kelas'], ['siswa', 'Per Siswa']].map((s) => '<div class="tab-g ' + (s[0] === scopeSel ? 'active' : '') + '" onclick="selScope(\'' + s[0] + '\')">' + s[1] + '</div>').join('');
   renderRank(); renderTren(); renderTerbaru();
 }
@@ -154,7 +164,7 @@ function renderRank() {
 }
 function renderTren() {
   const t = DASH.tren, W = 300, H = 150, pl = 24, pb = 22, pt = 8;
-  const series = ['Kebaikan', 'Pelanggaran', 'Prestasi', 'Program Sekolah'];
+  const series = ['Kebaikan', 'Pelanggaran', 'Prestasi', 'Tidak Masuk'];
   const maxV = Math.max(1, ...t.map((m) => Math.max(...series.map((s) => m[s]))));
   const x = (i) => pl + i * ((W - pl - 8) / (t.length - 1)), y = (v) => pt + (H - pt - pb) * (1 - v / maxV);
   let svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="img" aria-label="Tren 6 bulan">';
@@ -172,12 +182,12 @@ function renderTerbaru() {
   $('dbTerbaru').innerHTML = l.length ? l.map((k) => '<div class="rank-row"><span class="bd ' + badgeCls(k) + '">' + esc(badgeTxt(k)) + '</span><div class="nm"><b style="font-size:12.5px">' + esc(k.siswa.map((s) => s.nama).slice(0, 3).join(', ')) + (k.siswa.length > 3 ? ' +' + (k.siswa.length - 3) : '') + '</b><small>' + esc(tglLong(k.tanggal)) + ' · ' + esc(k.pencatat) + '</small></div></div>').join('') : '<div class="empty">Belum ada catatan.</div>';
 }
 const badgeCls = (k) => k.subkategori === 'Prestasi' ? 'Prestasi' : (k.kategori === 'Program Sekolah' ? 'Program' : (k.kategori === 'Tidak Masuk' ? 'TidakMasuk' : k.kategori));
-const badgeTxt = (k) => k.subkategori === 'Prestasi' ? 'Prestasi' : (k.kategori === 'Tidak Masuk' ? 'Tidak Masuk · ' + (k.subkategori || '') : k.kategori);
+const badgeTxt = (k) => k.subkategori === 'Prestasi' ? 'Prestasi' : (k.kategori === 'Program Sekolah' ? 'Program · ' + k.subkategori : (k.kategori === 'Tidak Masuk' ? 'Tidak Masuk · ' + (k.subkategori || '') : k.kategori));
 
 /* =========================================================
  *  CATATAN
  * ========================================================= */
-let CATATAN = {}, selSiswa = [], ctKat = '', ctReq = '', _deb;
+let CATATAN = {}, selSiswa = [], selNilai = {}, ctProg = '', ctKat = '', ctReq = '', _deb;
 function debounceCatatan() { clearTimeout(_deb); _deb = setTimeout(loadCatatan, 350); }
 function loadCatatan() {
   const ym = $('cfBulan').value || wib().date.slice(0, 7);
@@ -193,8 +203,9 @@ function kjCard(k) {
   const kk = k.kategori === 'Program Sekolah' ? 'Program' : (k.kategori === 'Tidak Masuk' ? 'TidakMasuk' : k.kategori);
   return '<div class="kj k-' + kk + (k.status !== 'Aktif' ? ' batal' : '') + '"><div class="d-flex flex-wrap gap-2 align-items-center mb-1"><span class="bd ' + badgeCls(k) + '">' + esc(badgeTxt(k)) + '</span>' +
     (k.status !== 'Aktif' ? '<span class="bd Batal">Dibatalkan</span>' : '') + '<span class="meta ms-auto"><i class="bi bi-calendar-event"></i>' + esc(tglLong(k.tanggal)) + (k.jam ? ' · ' + esc(k.jam) : '') + '</span></div>' +
-    '<div>' + k.siswa.map((s) => '<span class="chip"><b>' + esc(s.nama) + '</b> <small>' + esc(s.kelas) + '</small></span>').join('') + '</div>' +
-    '<div class="ur">' + esc(k.uraian) + '</div>' +
+    (k.kategori === 'Program Sekolah' ? '<div class="mb-1"><b>' + esc(k.subkategori) + '</b> &middot; Materi: ' + esc(k.materi) + '</div>' : '') +
+    '<div>' + k.siswa.map((s) => '<span class="chip"><b>' + esc(s.nama) + '</b> <small>' + esc(s.kelas) + '</small>' + (s.n1 ? ' ' + nilaiBadge(k.subkategori, 'a1', s.n1) + ' ' + nilaiBadge(k.subkategori, 'a2', s.n2) : '') + '</span>').join('') + '</div>' +
+    (k.uraian ? '<div class="ur">' + esc(k.uraian) + '</div>' : '') +
     (k.tindakLanjut ? '<div class="meta"><i class="bi bi-arrow-return-right"></i><b>Tindak lanjut:</b> ' + esc(k.tindakLanjut) + '</div>' : '') +
     (k.status !== 'Aktif' ? '<div class="meta text-danger"><i class="bi bi-x-circle"></i>Alasan batal: ' + esc(k.alasanBatal) + '</div>' : '') +
     '<div class="d-flex flex-wrap gap-2 align-items-center mt-2"><span class="meta">' + (k.lokasi ? '<i class="bi bi-geo-alt"></i>' + esc(k.lokasi) + ' &nbsp;' : '') + '<i class="bi bi-person"></i>' + esc(k.pencatat) + '</span>' +
@@ -202,7 +213,8 @@ function kjCard(k) {
     (k.canBatal ? '<button class="btn btn-sm btn-outline-danger" onclick="openBatal(\'' + k.kejadianId + '\')"><i class="bi bi-x-circle"></i> Batalkan</button>' : '') + '</span></div></div>';
 }
 function openCatatan() {
-  selSiswa = []; ctKat = ''; ctAbsen = ''; ctReq = uuid();
+  selSiswa = []; selNilai = {}; ctProg = ''; ctKat = ''; ctAbsen = ''; ctReq = uuid(); $('ctMateri').value = '';
+  $('materiList').innerHTML = String(PENG.DaftarProgram || '').split(',').map((x) => x.trim()).filter(Boolean).map((x) => '<option value="' + esc(x) + '">').join('');
   ['ctUraian', 'ctTL', 'ctLokasi', 'ctCari'].forEach((i) => { $(i).value = ''; }); $('ctPrestasi').checked = false;
   const n = wib(); $('ctTgl').value = n.date; $('ctJam').value = n.time;
   $('lokasiList').innerHTML = String(PENG.DaftarLokasi || '').split(',').map((x) => '<option value="' + esc(x.trim()) + '">').join('');
@@ -212,7 +224,7 @@ let ctAbsen = '';
 function setAbsen(a) { ctAbsen = a; document.querySelectorAll('#ctAbsen .opt').forEach((e) => e.classList.toggle('on', e.dataset.a === a)); }
 function setKat(k) {
   ctKat = k; if (k !== 'Tidak Masuk') setAbsen('');
-  $('ctAbsenWrap').classList.toggle('d-none', k !== 'Tidak Masuk'); $('ctUraianReq').classList.toggle('d-none', k === 'Tidak Masuk'); $('ctUraianOpt').classList.toggle('d-none', k !== 'Tidak Masuk');
+  $('ctAbsenWrap').classList.toggle('d-none', k !== 'Tidak Masuk'); $('ctMateriWrap').classList.toggle('d-none', k !== 'Program Sekolah'); renderChips(); $('ctUraianReq').classList.toggle('d-none', k === 'Tidak Masuk' || k === 'Program Sekolah'); $('ctUraianOpt').classList.toggle('d-none', k !== 'Tidak Masuk' && k !== 'Program Sekolah');
   document.querySelectorAll('#ctKat .opt').forEach((e) => e.classList.toggle('on', e.dataset.k === k));
   $('ctPrestasiWrap').classList.toggle('d-none', k !== 'Kebaikan');
 }
@@ -226,14 +238,31 @@ function renderPicker() {
 }
 function addSiswa(id) { const s = SISWA.find((x) => x.SiswaID === id); if (s) selSiswa.push(s); $('ctCari').value = ''; $('ctPicker').classList.add('d-none'); renderChips(); }
 function delSiswa(id) { selSiswa = selSiswa.filter((s) => s.SiswaID !== id); renderChips(); }
-function renderChips() { $('ctChips').innerHTML = selSiswa.length ? selSiswa.map((s) => '<span class="chip"><b>' + esc(s.Nama) + '</b> <small>' + esc(s.Kelas) + '</small><button onclick="delSiswa(\'' + s.SiswaID + '\')" aria-label="Hapus">&times;</button></span>').join('') : '<span class="meta">Belum ada siswa dipilih.</span>'; }
+function setProg(p) { ctProg = p; selNilai = {}; document.querySelectorAll('#ctProg .opt').forEach((e) => e.classList.toggle('on', e.dataset.p === p)); renderChips(); }
+function setNilai(id, asp, v) { (selNilai[id] = selNilai[id] || {})[asp] = v; renderChips(); }
+function setNilaiAll(asp, v) { selSiswa.forEach((s) => { (selNilai[s.SiswaID] = selNilai[s.SiswaID] || {})[asp] = v; }); renderChips(); }
+function renderChips() {
+  if (!selSiswa.length) { $('ctChips').innerHTML = '<span class="meta">Belum ada siswa dipilih.</span>'; return; }
+  if (ctKat !== 'Program Sekolah') { $('ctChips').innerHTML = selSiswa.map((s) => '<span class="chip"><b>' + esc(s.Nama) + '</b> <small>' + esc(s.Kelas) + '</small><button onclick="delSiswa(\'' + s.SiswaID + '\')" aria-label="Hapus">&times;</button></span>').join(''); return; }
+  const d = PROGRAM[ctProg];
+  if (!d) { $('ctChips').innerHTML = selSiswa.map((s) => '<span class="chip"><b>' + esc(s.Nama) + '</b> <small>' + esc(s.Kelas) + '</small><button onclick="delSiswa(\'' + s.SiswaID + '\')" aria-label="Hapus">&times;</button></span>').join('') + '<div class="meta mt-1">Pilih program di atas untuk mengisi penilaian.</div>'; return; }
+  const row = (id, asp) => '<div class="ind-pick"><span class="asp">' + esc(d[asp].nama) + '</span>' + d[asp].opsi.map((o, i) => '<button type="button" class="' + lvCls(d[asp].opsi.length, i) + ((selNilai[id] || {})[asp === 'a1' ? 'n1' : 'n2'] === o ? ' on' : '') + '" onclick="setNilai(\'' + id + '\',\'' + (asp === 'a1' ? 'n1' : 'n2') + '\',\'' + o + '\')">' + o + '</button>').join('') + '</div>';
+  const all = (asp, key) => '<div class="meta mb-1">Samakan semua &ndash; ' + esc(d[asp].nama) + ': ' + d[asp].opsi.map((o) => '<button type="button" class="btn btn-sm btn-outline-gold py-0 me-1" onclick="setNilaiAll(\'' + key + '\',\'' + o + '\')">' + o + '</button>').join('') + '</div>';
+  $('ctChips').innerHTML = all('a1', 'n1') + all('a2', 'n2') +
+    selSiswa.map((s) => '<div class="border rounded p-2 mb-1" style="background:#fffdf6"><div><b>' + esc(s.Nama) + '</b> <small class="text-muted">' + esc(s.Kelas) + '</small><button class="btn btn-sm text-danger float-end p-0" onclick="delSiswa(\'' + s.SiswaID + '\')" aria-label="Hapus">&times;</button></div>' + row(s.SiswaID, 'a1') + row(s.SiswaID, 'a2') + '</div>').join('');
+}
 function saveCatatan() {
   hideErr('ctErr');
   if (!ctKat) return showErr('ctErr', 'Pilih kategori catatan.');
   if (ctKat === 'Tidak Masuk' && !ctAbsen) return showErr('ctErr', 'Pilih jenis ketidakhadiran: Sakit, Izin, atau Alpa.');
+  if (ctKat === 'Program Sekolah') {
+    if (!ctProg) return showErr('ctErr', 'Pilih program: Bahasa Inggris atau Matematika.');
+    if (!$('ctMateri').value.trim()) return showErr('ctErr', 'Isi materi / kode pelajaran yang diajarkan.');
+    if (selSiswa.some((s) => !(selNilai[s.SiswaID] || {}).n1 || !(selNilai[s.SiswaID] || {}).n2)) return showErr('ctErr', 'Isi kedua penilaian untuk setiap siswa.');
+  }
   const btn = $('ctSave'); btn.disabled = true;
   api('createCatatan', { kategori: ctKat, subkategori: ctKat === 'Tidak Masuk' ? ctAbsen : ($('ctPrestasi').checked ? 'Prestasi' : 'Umum'), siswaIds: selSiswa.map((s) => s.SiswaID), tanggal: $('ctTgl').value, jam: $('ctJam').value,
-    lokasi: $('ctLokasi').value, uraian: $('ctUraian').value, tindakLanjut: $('ctTL').value, requestId: ctReq })
+    lokasi: $('ctLokasi').value, uraian: $('ctUraian').value, tindakLanjut: $('ctTL').value, requestId: ctReq, materi: $('ctMateri').value, program: ctProg, nilai: selNilai })
     .then((r) => { modal('mCatatan').hide(); toast('Catatan tersimpan.' + (r && r.wa ? (r.wa.dilewati ? ' WA otomatis dilewati (lebih dari 10 siswa); kirim manual.' : ' WA ke wali: ' + r.wa.terkirim + ' terkirim' + (r.wa.gagal ? ', ' + r.wa.gagal + ' gagal' : '') + '.') : '')); if ($('page-catatan').classList.contains('active')) loadCatatan(); else go('catatan'); })
     .catch((e) => showErr('ctErr', e.message)).finally(() => { btn.disabled = false; });
 }
@@ -330,12 +359,12 @@ let LP_LAST = [];
 function downloadLaporanXls() {
   if (!LP_LAST.length) return toast('Tampilkan laporan terlebih dahulu.', true);
   if (typeof XLSX === 'undefined') return toast('Pustaka Excel belum termuat. Periksa internet lalu coba lagi.', true);
-  const rekap = [['Nama', 'NIS', 'Kelas', 'Periode', 'Pelanggaran', 'Kebaikan', 'Prestasi', 'Program Sekolah', 'Tidak Masuk', 'Sakit', 'Izin', 'Alpa', 'Peringkat Kebaikan (kelas)', 'Peringkat Prestasi (kelas)', 'Peringkat Program (kelas)', 'Peringkat Pelanggaran (kelas)', 'Peringkat Tidak Masuk (kelas)']];
-  const det = [['Nama', 'NIS', 'Kelas', 'Kategori', 'Jenis', 'Tanggal', 'Jam', 'Lokasi', 'Uraian', 'Tindak lanjut', 'Pencatat']], per = [['Nama', 'Kelas', 'Bulan', 'Pelanggaran', 'Kebaikan', 'Prestasi', 'Program Sekolah', 'Sakit', 'Izin', 'Alpa']];
+  const rekap = [['Nama', 'NIS', 'Kelas', 'Periode', 'Pelanggaran', 'Kebaikan', 'Prestasi', 'Tidak Masuk', 'Sakit', 'Izin', 'Alpa', 'Penilaian Program (kali)', 'Peringkat Kebaikan (kelas)', 'Peringkat Prestasi (kelas)', 'Peringkat Pelanggaran (kelas)', 'Peringkat Tidak Masuk (kelas)']];
+  const det = [['Nama', 'NIS', 'Kelas', 'Kategori', 'Jenis / Program', 'Materi', 'Nilai 1', 'Nilai 2', 'Tanggal', 'Jam', 'Lokasi', 'Uraian', 'Tindak lanjut', 'Pencatat']], per = [['Nama', 'Kelas', 'Bulan', 'Pelanggaran', 'Kebaikan', 'Prestasi', 'Penilaian Program', 'Sakit', 'Izin', 'Alpa']];
   LP_LAST.forEach((r) => {
     const sg = r.siswa, s = r.ringkasan, pk = r.peringkat || {}, rk = (b) => (pk[b] ? pk[b].kelasRank : '');
-    rekap.push([sg.nama, sg.nis, sg.kelas, periodeLabel(r), s.Pelanggaran, s.Kebaikan, s.Prestasi, s['Program Sekolah'], s['Tidak Masuk'], s.Sakit, s.Izin, s.Alpa, rk('Kebaikan'), rk('Prestasi'), rk('Program Sekolah'), rk('Pelanggaran'), rk('Tidak Masuk')]);
-    ['Pelanggaran', 'Kebaikan', 'Program Sekolah', 'Tidak Masuk'].forEach((k) => (r[k] || []).forEach((x) => det.push([sg.nama, sg.nis, sg.kelas, k === 'Kebaikan' && x.prestasi ? 'Kebaikan (Prestasi)' : k, x.jenis || '', x.tanggal, x.jam, x.lokasi, x.uraian, x.tindakLanjut, x.pencatat])));
+    rekap.push([sg.nama, sg.nis, sg.kelas, periodeLabel(r), s.Pelanggaran, s.Kebaikan, s.Prestasi, s['Tidak Masuk'], s.Sakit, s.Izin, s.Alpa, s['Program Sekolah'], rk('Kebaikan'), rk('Prestasi'), rk('Pelanggaran'), rk('Tidak Masuk')]);
+    ['Pelanggaran', 'Kebaikan', 'Program Sekolah', 'Tidak Masuk'].forEach((k) => (r[k] || []).forEach((x) => det.push([sg.nama, sg.nis, sg.kelas, k === 'Kebaikan' && x.prestasi ? 'Kebaikan (Prestasi)' : k, x.jenis || '', x.materi || '', x.n1 || '', x.n2 || '', x.tanggal, x.jam, x.lokasi, x.uraian, x.tindakLanjut, x.pencatat])));
     (r.rekapBulan || []).forEach((m) => per.push([sg.nama, sg.kelas, bulanLong(m.bulan), m.Pelanggaran, m.Kebaikan, m.Prestasi, m['Program Sekolah'], m.Sakit, m.Izin, m.Alpa]));
   });
   const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rekap), 'Rekap'); XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(det), 'Catatan Lengkap');
@@ -356,6 +385,35 @@ function rpTable(rows, withPrestasi) {
   return '<table class="rp-tbl"><thead><tr><th style="width:17%">Tanggal / Jam</th><th style="width:14%">Lokasi</th><th>Uraian kejadian</th><th style="width:22%">Tindak lanjut</th><th style="width:13%">Pencatat</th></tr></thead><tbody>' +
     rows.map((r) => '<tr><td>' + esc(tglLong(r.tanggal)) + (r.jam ? '<br>' + esc(r.jam) : '') + '</td><td>' + esc(r.lokasi) + '</td><td>' + (withPrestasi && r.prestasi ? '<b>[Prestasi]</b> ' : '') + esc(r.uraian) + '</td><td>' + esc(r.tindakLanjut) + '</td><td>' + esc(r.pencatat) + '</td></tr>').join('') + '</tbody></table>';
 }
+function progChart(P) {
+  if (!P.opsi2.length) return '';
+  let pts = P.harian.map((h) => ({ x: h.tanggal.slice(8, 10) + '/' + h.tanggal.slice(5, 7), a: h.s1 / P.opsi1.length, b: h.s2 / P.opsi2.length }));
+  if (P.harian.length > 24) {
+    const g = {}, o = []; P.harian.forEach((h) => { const k = h.tanggal.slice(0, 7); if (!g[k]) { g[k] = []; o.push(k); } g[k].push(h); });
+    pts = o.map((k) => ({ x: BULAN[+k.slice(5, 7) - 1].slice(0, 3), a: g[k].reduce((t, h) => t + h.s1 / P.opsi1.length, 0) / g[k].length, b: g[k].reduce((t, h) => t + h.s2 / P.opsi2.length, 0) / g[k].length }));
+  }
+  const W = 520, H = 150, L = 34, R = 10, T = 12, B = 24, n = pts.length, X = (i) => L + (n === 1 ? (W - L - R) / 2 : i * (W - L - R) / (n - 1)), Y = (v) => T + (1 - v) * (H - T - B);
+  const line = (key, col) => '<polyline fill="none" stroke="' + col + '" stroke-width="2" points="' + pts.map((p, i) => X(i).toFixed(1) + ',' + Y(p[key]).toFixed(1)).join(' ') + '"/>' + pts.map((p, i) => '<circle cx="' + X(i).toFixed(1) + '" cy="' + Y(p[key]).toFixed(1) + '" r="3" fill="' + col + '"/>').join('');
+  const step = Math.ceil(n / 10);
+  return '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;max-height:150px;margin:4px 0"><rect x="' + L + '" y="' + T + '" width="' + (W - L - R) + '" height="' + (H - T - B) + '" fill="#fafafa" stroke="#ccc"/>' +
+    [0, 0.5, 1].map((v) => '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(v) + '" y2="' + Y(v) + '" stroke="#ddd" stroke-dasharray="3 3"/>').join('') +
+    '<text x="' + (L - 4) + '" y="' + (T + 4) + '" font-size="9" text-anchor="end" fill="#555">Tinggi</text><text x="' + (L - 4) + '" y="' + (H - B) + '" font-size="9" text-anchor="end" fill="#555">Rendah</text>' +
+    line('a', '#2563eb') + line('b', '#d97706') + pts.map((p, i) => (i % step === 0 ? '<text x="' + X(i).toFixed(1) + '" y="' + (H - 8) + '" font-size="9" text-anchor="middle" fill="#555">' + esc(p.x) + '</text>' : '')).join('') + '</svg>' +
+    '<div style="font-size:9.5px"><b style="color:#2563eb">&#9632;</b> ' + esc(P.a1) + ' &nbsp; <b style="color:#d97706">&#9632;</b> ' + esc(P.a2) + (P.harian.length > 24 ? ' &nbsp; (rata-rata per bulan)' : '') + '</div>';
+}
+function rpProgram(r) {
+  const l = r.program || [];
+  if (!l.length) return '<div class="rp-none">Belum ada penilaian program unggulan pada periode ini.</div>';
+  return l.map((P) => {
+    const rk = (o, m) => o.length ? o.map((k) => esc(k) + ' <b>' + (m[k] || 0) + '</b>').join(' &middot; ') : Object.keys(m).map((k) => esc(k) + ' <b>' + m[k] + '</b>').join(' &middot; ');
+    return '<div class="pm-box"><b>Program ' + esc(P.program) + '</b> &mdash; Daily Achievement Checklist (' + P.harian.length + ' pertemuan)</div>' +
+      '<table class="rp-tbl"><thead><tr><th style="width:15%">Hari / Tanggal</th><th style="width:26%">Materi / Kode pelajaran</th><th style="width:11%">' + esc(P.a1) + '</th>' + (P.a2 ? '<th style="width:11%">' + esc(P.a2) + '</th>' : '') + '<th>Catatan guru pendamping</th></tr></thead><tbody>' +
+      P.harian.map((h) => '<tr><td>' + esc(tglLong(h.tanggal)) + '</td><td>' + esc(h.materi) + '</td><td style="text-align:center">' + nilaiBadge(P.program, 'a1', h.n1) + '</td>' + (P.a2 ? '<td style="text-align:center">' + nilaiBadge(P.program, 'a2', h.n2) + '</td>' : '') + '<td>' + esc(h.uraian) + (h.pendamping ? '<br><span style="font-size:9px;color:#777">' + esc(h.pendamping) + '</span>' : '') + '</td></tr>').join('') + '</tbody></table>' +
+      '<div class="pm-box"><b>Monthly Progress Report</b><br>' + esc(P.a1) + ': ' + rk(P.opsi1, P.rekap1) + (P.a2 ? '<br>' + esc(P.a2) + ': ' + rk(P.opsi2, P.rekap2) : '') + '</div>' + progChart(P) +
+      (LEGEND[P.program] ? '<div style="font-size:9px;color:#666">' + esc(LEGEND[P.program]) + '</div>' : '') +
+      '<div class="rp-sign" style="margin-top:6px"><div>Guru Pendamping<div class="sp" style="height:26px"></div>(................)</div><div>Orang Tua / Wali<div class="sp" style="height:26px"></div>(................)</div></div>';
+  }).join('') + '<div style="font-size:9px;color:#666;margin-top:2px">Program unggulan tidak dihitung dalam peringkat/klasemen.</div>';
+}
 function rpAbsen(rows) {
   if (!rows.length) return '<div class="rp-none">Tidak ada catatan tidak masuk pada periode ini.</div>';
   return '<table class="rp-tbl"><thead><tr><th style="width:26%">Tanggal</th><th style="width:12%">Jenis</th><th>Keterangan</th><th style="width:18%">Pencatat</th></tr></thead><tbody>' +
@@ -364,12 +422,12 @@ function rpAbsen(rows) {
 function rpSemester(r) {
   const k = ['Pelanggaran', 'Kebaikan', 'Prestasi', 'Program Sekolah', 'Sakit', 'Izin', 'Alpa'], tot = {}; k.forEach((x) => { tot[x] = 0; });
   const body = r.rekapBulan.map((m) => { k.forEach((x) => { tot[x] += m[x]; }); return '<tr><td style="text-align:left">' + esc(bulanLong(m.bulan)) + '</td>' + k.map((x) => '<td>' + m[x] + '</td>').join('') + '</tr>'; }).join('');
-  return '<div class="rp-sec" style="background:#444">Rekap per bulan (' + esc(r.periode.label) + ')</div><table class="rp-sem"><thead><tr><th>Bulan</th><th>Pelang-<br>garan</th><th>Kebaikan</th><th>Prestasi</th><th>Program<br>Sekolah</th><th>Sakit</th><th>Izin</th><th>Alpa</th></tr></thead><tbody>' + body +
+  return '<div class="rp-sec" style="background:#444">Rekap per bulan (' + esc(r.periode.label) + ')</div><table class="rp-sem"><thead><tr><th>Bulan</th><th>Pelang-<br>garan</th><th>Kebaikan</th><th>Prestasi</th><th>Penilaian<br>Program</th><th>Sakit</th><th>Izin</th><th>Alpa</th></tr></thead><tbody>' + body +
     '<tr class="tot"><td style="text-align:left">Jumlah semester</td>' + k.map((x) => '<td>' + tot[x] + '</td>').join('') + '</tr></tbody></table>';
 }
 function rankBox(r) {
   const pk = r.peringkat; if (!pk) return '';
-  const defs = [['Kebaikan', 'Kebaikan', '#15803d', false], ['Prestasi', 'Prestasi', '#b45309', false], ['Program Sekolah', 'Program Sekolah', '#0369a1', false], ['Pelanggaran', 'Pelanggaran', '#b91c1c', true], ['Tidak Masuk', 'Tidak Masuk', '#6d28d9', true]];
+  const defs = [['Kebaikan', 'Kebaikan', '#15803d', false], ['Prestasi', 'Prestasi', '#b45309', false], ['Pelanggaran', 'Pelanggaran', '#b91c1c', true], ['Tidak Masuk', 'Tidak Masuk', '#6d28d9', true]];
   const cell = (d) => {
     const x = pk[d[0]]; if (!x) return '';
     const kosong = x.jumlah === 0;
@@ -378,7 +436,7 @@ function rankBox(r) {
       '<div class="j">Sekolah: <b>' + (kosong ? '-' : '#' + x.sekolahRank) + '</b> dari ' + x.sekolahTotal + '<br><b>' + x.jumlah + '</b> catatan</div></div>';
   };
   return '<div class="rp-rank"><div class="ttl">&#9733; PERINGKAT ' + esc(String(r.siswa.nama).toUpperCase()) + ' &#9733;</div><div class="cells">' + defs.map(cell).join('') + '</div>' +
-    '<div class="nt">Periode ' + esc(r.periode.label) + '. Kebaikan, Prestasi, Program Sekolah: peringkat 1 = catatan terbanyak (terbaik). Pelanggaran dan Tidak Masuk: peringkat 1 = catatan terbanyak (paling perlu perhatian). Jumlah catatan sama = peringkat sama.</div></div>';
+    '<div class="nt">Periode ' + esc(r.periode.label) + '. Kebaikan dan Prestasi: peringkat 1 = catatan terbanyak (terbaik). Pelanggaran dan Tidak Masuk: peringkat 1 = catatan terbanyak (paling perlu perhatian). Jumlah catatan sama = peringkat sama.</div></div>';
 }
 const DEV_COLORS = ['#ff1744', '#ff9100', '#00c853', '#2979ff', '#d500f9'];
 function devHtml(cls) {
@@ -392,11 +450,11 @@ function reportHtml(r) {
     '<div class="rp-title">LAPORAN PERKEMBANGAN SISWA</div><div class="rp-per">Periode: ' + esc(r.periode.label) + ' &middot; Tahun ajaran ' + esc(r.periode.ta || sg.tahunAjaran || p.TahunAjaran) + '</div>' +
     '<table class="rp-id"><tr><td>Nama siswa</td><td>: <b>' + esc(sg.nama) + '</b></td><td>Kelas</td><td>: ' + esc(sg.kelas) + '</td></tr><tr><td>NIS</td><td>: ' + esc(sg.nis) + '</td><td>Wali kelas</td><td>: ' + esc(r.waliKelas || '-') + '</td></tr></table>' +
     rankBox(r) +
-    '<div class="rp-sum"><div><b>' + s.Pelanggaran + '</b>Pelanggaran</div><div><b>' + s.Kebaikan + '</b>Kebaikan</div><div><b>' + s.Prestasi + '</b>Prestasi</div><div><b>' + s['Program Sekolah'] + '</b>Program Sekolah</div><div><b>' + s['Tidak Masuk'] + '</b>Tidak Masuk<br><span style="font-size:9px">S ' + s.Sakit + ' &middot; I ' + s.Izin + ' &middot; A ' + s.Alpa + '</span></div></div>' +
+    '<div class="rp-sum"><div><b>' + s.Pelanggaran + '</b>Pelanggaran</div><div><b>' + s.Kebaikan + '</b>Kebaikan</div><div><b>' + s.Prestasi + '</b>Prestasi</div><div><b>' + s['Tidak Masuk'] + '</b>Tidak Masuk<br><span style="font-size:9px">S ' + s.Sakit + ' &middot; I ' + s.Izin + ' &middot; A ' + s.Alpa + '</span></div><div><b>' + s['Program Sekolah'] + '</b>Penilaian Program<br><span style="font-size:9px">' + (s.ProgramRinci || []).map((x) => esc(x.program) + ' ' + x.jumlah).join(' &middot; ') + '</span></div></div>' +
     (sem ? rpSemester(r) : '') +
     '<div class="rp-sec Pelanggaran">A. Pelanggaran</div>' + rpTable(r.Pelanggaran) +
     '<div class="rp-sec Kebaikan">B. Kebaikan</div>' + rpTable(r.Kebaikan, true) +
-    '<div class="rp-sec Program">C. Program Sekolah</div>' + rpTable(r['Program Sekolah']) +
+    '<div class="rp-sec Program">C. Program Unggulan &ndash; Perkembangan Siswa</div>' + rpProgram(r) +
     '<div class="rp-sec TidakMasuk">D. Catatan Tidak Masuk (Sakit / Izin / Alpa)</div>' + rpAbsen(r['Tidak Masuk']) +
     '<div class="rp-sec" style="background:#444">Catatan wali kelas</div><div class="rp-note" contenteditable="true" spellcheck="false"></div>' +
     '<div class="rp-sign"><div>Wali Kelas<div class="sp"></div><b>' + esc(r.waliKelas || '................') + '</b></div><div>Orang Tua / Wali<div class="sp"></div>(................)</div><div>Kepala Madrasah<div class="sp"></div><b>' + esc(p.NamaKepala || '................') + '</b>' + (p.NIPKepala ? '<br>NIP. ' + esc(p.NIPKepala) : '') + '</div></div>' +
@@ -471,10 +529,10 @@ function loadLog() {
   api('getLog', 200).then((l) => { $('logBody').innerHTML = l.length ? l.map((x) => '<tr><td style="white-space:nowrap">' + esc(x.waktu) + '</td><td>' + esc(x.pelaku) + '</td><td><b>' + esc(x.aksi) + '</b></td><td>' + esc(x.entitas) + ' ' + esc(x.entitasId) + (x.lama || x.baru ? '<br><small class="text-muted">' + esc(x.lama) + (x.lama && x.baru ? ' → ' : '') + esc(x.baru) + '</small>' : '') + '</td><td>' + esc(x.alasan) + '</td></tr>').join('') : '<tr><td colspan="5" class="empty">Belum ada aktivitas.</td></tr>'; }).catch((e) => toast(e.message, true));
 }
 function loadPengaturan() {
-  api('getPengaturan').then((p) => { PENG = p; $('pgNama').value = p.NamaMadrasah; $('pgAlamat').value = p.AlamatMadrasah; $('pgTa').value = p.TahunAjaran; $('pgNip').value = p.NIPKepala; $('pgKepala').value = p.NamaKepala; $('pgLokasi').value = p.DaftarLokasi; });
+  api('getPengaturan').then((p) => { PENG = p; $('pgNama').value = p.NamaMadrasah; $('pgAlamat').value = p.AlamatMadrasah; $('pgTa').value = p.TahunAjaran; $('pgNip').value = p.NIPKepala; $('pgKepala').value = p.NamaKepala; $('pgLokasi').value = p.DaftarLokasi; $('pgProgram').value = p.DaftarProgram || ''; });
 }
 function savePengaturan() {
-  api('savePengaturan', { NamaMadrasah: $('pgNama').value, AlamatMadrasah: $('pgAlamat').value, TahunAjaran: $('pgTa').value, NIPKepala: $('pgNip').value, NamaKepala: $('pgKepala').value, DaftarLokasi: $('pgLokasi').value })
+  api('savePengaturan', { NamaMadrasah: $('pgNama').value, AlamatMadrasah: $('pgAlamat').value, TahunAjaran: $('pgTa').value, NIPKepala: $('pgNip').value, NamaKepala: $('pgKepala').value, DaftarLokasi: $('pgLokasi').value, DaftarProgram: $('pgProgram').value })
     .then((p) => { PENG = p; toast('Pengaturan tersimpan.'); }).catch((e) => toast(e.message, true));
 }
 
