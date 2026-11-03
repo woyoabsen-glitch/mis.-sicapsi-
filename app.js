@@ -9,9 +9,26 @@ let boardSel = 'Kebaikan', scopeSel = 'kelas';
 const BOARD_COLOR = { Kebaikan: '#16a34a', Pelanggaran: '#dc2626', Prestasi: '#d97706', 'Tidak Masuk': '#7c3aed' };
 const BOARD_ICON = { Kebaikan: 'bi-heart-fill', Pelanggaran: 'bi-exclamation-triangle-fill', Prestasi: 'bi-award-fill', 'Tidak Masuk': 'bi-person-x-fill' };
 const PROGRAM = {
-  'Bahasa Inggris': { a1: { nama: 'Academic Achievement', opsi: ['NI', 'IP', 'A'] }, a2: { nama: 'Attitude', opsi: ['LA', 'A'] } },
-  'Matematika': { a1: { nama: 'Keterlibatan Belajar', opsi: ['BB', 'MB', 'BSH'] }, a2: { nama: 'Ketepatan Capaian', opsi: ['C', 'B', 'A'] } }
+  'Bahasa Inggris': { a1: { nama: 'Academic Achievement', opsi: ['NI', 'IP', 'A'] }, a2: { nama: 'Attitude', opsi: ['LA', 'A'] }, hari: [6, 0, 1] },
+  'Matematika': { a1: { nama: 'Keterlibatan Belajar', opsi: ['BB', 'MB', 'BSH'] }, a2: { nama: 'Ketepatan Capaian', opsi: ['C', 'B', 'A'] }, hari: [2, 3, 4] }
 };
+let _nt;
+function progByDay(t) { const d = new Date(t + 'T00:00:00').getDay(); return Object.keys(PROGRAM).find((k) => PROGRAM[k].hari.includes(d)) || ''; }
+function onTglChange() { if (ctKat === 'Program Sekolah' && !ctProgManual) { const p = progByDay($('ctTgl').value); if (p) { setProg(p, false); return; } } jadwalHint(); }
+function jadwalHint() {
+  const el = $('ctJadwal'); if (!el) return; el.textContent = '';
+  if (ctKat !== 'Program Sekolah' || !ctProg || !$('ctTgl').value) return;
+  const d = new Date($('ctTgl').value + 'T00:00:00').getDay();
+  if (!PROGRAM[ctProg].hari.includes(d)) el.textContent = 'Catatan: ' + HARI[d] + ' bukan hari jadwal ' + ctProg + ' (' + PROGRAM[ctProg].hari.map((x) => HARI[x]).join(', ') + '). Tetap bisa disimpan bila ada jadwal pengganti.';
+}
+function refreshNarasi() {
+  clearTimeout(_nt); const box = $('ctNarasi');
+  const items = selSiswa.filter((s) => (selNilai[s.SiswaID] || {}).n1 && (selNilai[s.SiswaID] || {}).n2).map((s) => ({ siswaId: s.SiswaID, n1: selNilai[s.SiswaID].n1, n2: selNilai[s.SiswaID].n2 }));
+  if (ctKat !== 'Program Sekolah' || !ctProg || !items.length) { box.classList.add('d-none'); return; }
+  _nt = setTimeout(() => api('previewNarasi', { program: ctProg, materi: $('ctMateri').value.trim(), tanggal: $('ctTgl').value, items: items.slice(0, 5) }).then((l) => {
+    box.innerHTML = '<div class="meta mb-1"><b>Deskripsi harian otomatis</b> (pratinjau' + (items.length > 5 ? ', 5 siswa pertama' : '') + ')</div>' + l.map((x) => '<div class="n"><b>' + esc(x.nama) + ':</b> ' + esc(x.narasi) + '</div>').join(''); box.classList.remove('d-none');
+  }).catch(() => box.classList.add('d-none')), 500);
+}
 const LEGEND = {
   'Bahasa Inggris': 'NI = Need Improvement (butuh peningkatan) · IP = In Progress (sedang berkembang) · A = Achieved (tercapai) · Attitude: LA = Less Active (kurang aktif) · A = Active (aktif)',
   'Matematika': 'Keterlibatan: BB = Belum Berkembang · MB = Mulai Berkembang · BSH = Berkembang Sesuai Harapan · Ketepatan: C = Perlu Bimbingan · B = Cukup Tepat · A = Sangat Tepat'
@@ -187,7 +204,7 @@ const badgeTxt = (k) => k.subkategori === 'Prestasi' ? 'Prestasi' : (k.kategori 
 /* =========================================================
  *  CATATAN
  * ========================================================= */
-let CATATAN = {}, selSiswa = [], selNilai = {}, ctProg = '', ctKat = '', ctReq = '', _deb;
+let CATATAN = {}, selSiswa = [], selNilai = {}, ctProgManual = false, ctProg = '', ctKat = '', ctReq = '', _deb;
 function debounceCatatan() { clearTimeout(_deb); _deb = setTimeout(loadCatatan, 350); }
 function loadCatatan() {
   const ym = $('cfBulan').value || wib().date.slice(0, 7);
@@ -213,7 +230,7 @@ function kjCard(k) {
     (k.canBatal ? '<button class="btn btn-sm btn-outline-danger" onclick="openBatal(\'' + k.kejadianId + '\')"><i class="bi bi-x-circle"></i> Batalkan</button>' : '') + '</span></div></div>';
 }
 function openCatatan() {
-  selSiswa = []; selNilai = {}; ctProg = ''; ctKat = ''; ctAbsen = ''; ctReq = uuid(); $('ctMateri').value = '';
+  selSiswa = []; selNilai = {}; ctProg = ''; ctProgManual = false; ctKat = ''; ctAbsen = ''; ctReq = uuid(); $('ctMateri').value = '';
   $('materiList').innerHTML = String(PENG.DaftarProgram || '').split(',').map((x) => x.trim()).filter(Boolean).map((x) => '<option value="' + esc(x) + '">').join('');
   ['ctUraian', 'ctTL', 'ctLokasi', 'ctCari'].forEach((i) => { $(i).value = ''; }); $('ctPrestasi').checked = false;
   const n = wib(); $('ctTgl').value = n.date; $('ctJam').value = n.time;
@@ -227,6 +244,8 @@ function setKat(k) {
   $('ctAbsenWrap').classList.toggle('d-none', k !== 'Tidak Masuk'); $('ctMateriWrap').classList.toggle('d-none', k !== 'Program Sekolah'); renderChips(); $('ctUraianReq').classList.toggle('d-none', k === 'Tidak Masuk' || k === 'Program Sekolah'); $('ctUraianOpt').classList.toggle('d-none', k !== 'Tidak Masuk' && k !== 'Program Sekolah');
   document.querySelectorAll('#ctKat .opt').forEach((e) => e.classList.toggle('on', e.dataset.k === k));
   $('ctPrestasiWrap').classList.toggle('d-none', k !== 'Kebaikan');
+  if (k === 'Program Sekolah' && !ctProg) { const p = progByDay($('ctTgl').value); if (p) setProg(p, false); }
+  jadwalHint();
 }
 function renderPicker() {
   const q = $('ctCari').value.trim().toLowerCase(), box = $('ctPicker');
@@ -238,10 +257,11 @@ function renderPicker() {
 }
 function addSiswa(id) { const s = SISWA.find((x) => x.SiswaID === id); if (s) selSiswa.push(s); $('ctCari').value = ''; $('ctPicker').classList.add('d-none'); renderChips(); }
 function delSiswa(id) { selSiswa = selSiswa.filter((s) => s.SiswaID !== id); renderChips(); }
-function setProg(p) { ctProg = p; selNilai = {}; document.querySelectorAll('#ctProg .opt').forEach((e) => e.classList.toggle('on', e.dataset.p === p)); renderChips(); }
+function setProg(p, manual) { if (manual !== false) ctProgManual = true; ctProg = p; selNilai = {}; document.querySelectorAll('#ctProg .opt').forEach((e) => e.classList.toggle('on', e.dataset.p === p)); renderChips(); jadwalHint(); }
 function setNilai(id, asp, v) { (selNilai[id] = selNilai[id] || {})[asp] = v; renderChips(); }
 function setNilaiAll(asp, v) { selSiswa.forEach((s) => { (selNilai[s.SiswaID] = selNilai[s.SiswaID] || {})[asp] = v; }); renderChips(); }
 function renderChips() {
+  refreshNarasi();
   if (!selSiswa.length) { $('ctChips').innerHTML = '<span class="meta">Belum ada siswa dipilih.</span>'; return; }
   if (ctKat !== 'Program Sekolah') { $('ctChips').innerHTML = selSiswa.map((s) => '<span class="chip"><b>' + esc(s.Nama) + '</b> <small>' + esc(s.Kelas) + '</small><button onclick="delSiswa(\'' + s.SiswaID + '\')" aria-label="Hapus">&times;</button></span>').join(''); return; }
   const d = PROGRAM[ctProg];
@@ -407,9 +427,10 @@ function rpProgram(r) {
   return l.map((P) => {
     const rk = (o, m) => o.length ? o.map((k) => esc(k) + ' <b>' + (m[k] || 0) + '</b>').join(' &middot; ') : Object.keys(m).map((k) => esc(k) + ' <b>' + m[k] + '</b>').join(' &middot; ');
     return '<div class="pm-box"><b>Program ' + esc(P.program) + '</b> &mdash; Daily Achievement Checklist (' + P.harian.length + ' pertemuan)</div>' +
-      '<table class="rp-tbl"><thead><tr><th style="width:15%">Hari / Tanggal</th><th style="width:26%">Materi / Kode pelajaran</th><th style="width:11%">' + esc(P.a1) + '</th>' + (P.a2 ? '<th style="width:11%">' + esc(P.a2) + '</th>' : '') + '<th>Catatan guru pendamping</th></tr></thead><tbody>' +
-      P.harian.map((h) => '<tr><td>' + esc(tglLong(h.tanggal)) + '</td><td>' + esc(h.materi) + '</td><td style="text-align:center">' + nilaiBadge(P.program, 'a1', h.n1) + '</td>' + (P.a2 ? '<td style="text-align:center">' + nilaiBadge(P.program, 'a2', h.n2) + '</td>' : '') + '<td>' + esc(h.uraian) + (h.pendamping ? '<br><span style="font-size:9px;color:#777">' + esc(h.pendamping) + '</span>' : '') + '</td></tr>').join('') + '</tbody></table>' +
+      '<table class="rp-tbl"><thead><tr><th style="width:15%">Hari / Tanggal</th><th style="width:26%">Materi / Kode pelajaran</th><th style="width:11%">' + esc(P.a1) + '</th>' + (P.a2 ? '<th style="width:11%">' + esc(P.a2) + '</th>' : '') + '<th>Deskripsi harian &amp; catatan guru pendamping</th></tr></thead><tbody>' +
+      P.harian.map((h) => '<tr><td>' + esc(tglLong(h.tanggal)) + '</td><td>' + esc(h.materi) + '</td><td style="text-align:center">' + nilaiBadge(P.program, 'a1', h.n1) + '</td>' + (P.a2 ? '<td style="text-align:center">' + nilaiBadge(P.program, 'a2', h.n2) + '</td>' : '') + '<td>' + esc(h.narasi || '') + (h.uraian ? '<br><i style="color:#555">Catatan guru: ' + esc(h.uraian) + '</i>' : '') + (h.pendamping ? '<br><span style="font-size:9px;color:#777">' + esc(h.pendamping) + '</span>' : '') + '</td></tr>').join('') + '</tbody></table>' +
       '<div class="pm-box"><b>Monthly Progress Report</b><br>' + esc(P.a1) + ': ' + rk(P.opsi1, P.rekap1) + (P.a2 ? '<br>' + esc(P.a2) + ': ' + rk(P.opsi2, P.rekap2) : '') + '</div>' + progChart(P) +
+      (P.bulanan ? '<div class="kbc"><div class="d"><h6>Deskripsi bulanan</h6>' + esc(P.bulanan.deskripsi) + '</div><div class="k"><h6>&#127775; Kekuatan utama</h6><ul>' + P.bulanan.kekuatan.map((x) => '<li>' + esc(x) + '</li>').join('') + '</ul></div><div class="f"><h6>&#127919; Fokus pendampingan</h6><ul>' + P.bulanan.fokus.map((x) => '<li>' + esc(x) + '</li>').join('') + '</ul></div><div class="t"><h6>&#128161; Tindak lanjut guru</h6><ul>' + P.bulanan.tindakLanjut.map((x) => '<li>' + esc(x) + '</li>').join('') + '</ul></div></div>' : '') +
       (LEGEND[P.program] ? '<div style="font-size:9px;color:#666">' + esc(LEGEND[P.program]) + '</div>' : '') +
       '<div class="rp-sign" style="margin-top:6px"><div>Guru Pendamping<div class="sp" style="height:26px"></div>(................)</div><div>Orang Tua / Wali<div class="sp" style="height:26px"></div>(................)</div></div>';
   }).join('') + '<div style="font-size:9px;color:#666;margin-top:2px">Program unggulan tidak dihitung dalam peringkat/klasemen.</div>';
