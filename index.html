@@ -154,7 +154,8 @@ body{background:var(--cream); color:var(--text); margin:0;}
 @media print{
   body *{visibility:hidden;} #reportArea,#reportArea *{visibility:visible;}
   #reportArea{position:absolute; left:0; top:0; width:100%;}
-  .report-page{box-shadow:none; border:0; margin:0; width:100%; padding:10mm 12mm;}
+  .report-page{box-shadow:none; border:0; margin:0; width:100%; padding:5mm 10mm 14mm;}
+  .rp-rank{margin:7px 0; padding:6px;} .rp-sum{margin:6px 0;} .rp-sec{margin-top:8px;} .rp-sign{margin-top:8px;} .rp-sign .sp{height:34px;} .rp-note{min-height:34px;} .rp-tbl td,.rp-tbl th{padding-top:2px; padding-bottom:2px;}
   .no-print{display:none !important;} @page{size:A4; margin:6mm;}
 }
 .login-logo{display:block; width:210px; max-width:70%; margin:0 auto 6px; border-radius:14px;}
@@ -186,6 +187,9 @@ body{background:var(--cream); color:var(--text); margin:0;}
 .ind.lo{background:#dc2626;} .ind.mid{background:#d97706;} .ind.hi{background:#16a34a;}
 .ind-pick{display:flex; gap:4px; flex-wrap:wrap; margin:4px 0 8px;} .ind-pick button{border:1.5px solid var(--line); background:#faf6ea; border-radius:999px; font-size:11px; font-weight:600; padding:2px 10px;}
 .ind-pick button.on.lo{background:#dc2626; color:#fff; border-color:#dc2626;} .ind-pick button.on.mid{background:#d97706; color:#fff; border-color:#d97706;} .ind-pick button.on.hi{background:#16a34a; color:#fff; border-color:#16a34a;} .ind-pick .asp{font-size:11px; font-weight:700; color:#555; min-width:130px; align-self:center;}
+.narasi-box{background:#f0fdf4; border:1px dashed #16a34a; border-radius:10px; padding:8px 10px; margin:6px 0; font-size:12px;} .narasi-box .n{margin-bottom:5px;} .narasi-box b{color:#166534;}
+.kbc{margin:6px 0; font-size:10.5px;} .kbc>div{border-radius:6px; padding:5px 9px; margin:3px 0; -webkit-print-color-adjust:exact; print-color-adjust:exact; break-inside:avoid;} .kbc ul{margin:2px 0 0 16px; padding:0;}
+.kbc .d{background:#f1f5f9; border-left:4px solid #475569;} .kbc .k{background:#dcfce7; border-left:4px solid #16a34a;} .kbc .f{background:#ffedd5; border-left:4px solid #ea580c;} .kbc .t{background:#dbeafe; border-left:4px solid #2563eb;} .kbc h6{margin:0 0 2px; font-size:11px; font-weight:800;}
 .pm-box{border:1px solid #bbb; border-radius:6px; padding:4px 8px; margin:4px 0; font-size:10.5px;}
 </style>
 </head>
@@ -447,14 +451,15 @@ body{background:var(--cream); color:var(--text); margin:0;}
     <div class="mb-3 d-none" id="ctMateriWrap"><label class="form-label">Program unggulan <span class="text-danger">*</span></label>
       <div class="seg" id="ctProg" style="grid-template-columns:repeat(2,1fr)"><div class="opt Program" data-p="Bahasa Inggris" onclick="setProg('Bahasa Inggris')"><i class="bi bi-translate"></i>Bahasa Inggris</div><div class="opt Program" data-p="Matematika" onclick="setProg('Matematika')"><i class="bi bi-calculator"></i>Matematika</div></div>
       <label class="form-label mt-2">Materi / kode pelajaran <span class="text-danger">*</span></label><input class="form-control" id="ctMateri" list="materiList" maxlength="200" placeholder="mis. Unit 3 - Colours / Perkalian 2-5"><datalist id="materiList"></datalist>
-      <div class="meta mt-1">Dinilai oleh guru pendamping. Bahasa Inggris: Academic Achievement (NI/IP/A) + Attitude (LA/A). Matematika: Keterlibatan Belajar (BB/MB/BSH) + Ketepatan Capaian (C/B/A). Tidak masuk klasemen.</div></div>
+      <div id="ctJadwal" class="meta mt-1 text-warning-emphasis"></div><div class="meta mt-1">Jadwal: Bahasa Inggris (Sabtu, Minggu, Senin) &middot; Matematika (Selasa, Rabu, Kamis). Dinilai oleh guru pendamping. Bahasa Inggris: Academic Achievement (NI/IP/A) + Attitude (LA/A). Matematika: Keterlibatan Belajar (BB/MB/BSH) + Ketepatan Capaian (C/B/A). Tidak masuk klasemen.</div></div>
     <div class="form-check mb-3 d-none" id="ctPrestasiWrap"><input class="form-check-input" type="checkbox" id="ctPrestasi"><label class="form-check-label small" for="ctPrestasi"><b>Tandai sebagai prestasi</b> (lomba, juara, penghargaan)</label></div>
     <label class="form-label">Siswa yang terlibat <span class="text-muted fw-normal">(boleh lebih dari satu)</span></label>
     <div id="ctChips" class="mb-1"></div>
+    <div id="ctNarasi" class="narasi-box d-none"></div>
     <input class="form-control" id="ctCari" placeholder="Ketik nama / NIS / kelas untuk mencari…" oninput="renderPicker()" autocomplete="off">
     <div class="picker-list d-none" id="ctPicker"></div>
     <div class="row g-2 mt-2">
-      <div class="col-6"><label class="form-label">Tanggal kejadian</label><input type="date" class="form-control" id="ctTgl"></div>
+      <div class="col-6"><label class="form-label">Tanggal kejadian</label><input type="date" class="form-control" id="ctTgl" onchange="onTglChange()"></div>
       <div class="col-6"><label class="form-label">Jam</label><input type="time" class="form-control" id="ctJam"></div>
       <div class="col-12"><label class="form-label">Lokasi / kegiatan</label><input class="form-control" id="ctLokasi" list="lokasiList" placeholder="mis. Lapangan"><datalist id="lokasiList"></datalist></div>
       <div class="col-12"><label class="form-label">Uraian kejadian <span class="text-danger" id="ctUraianReq">*</span><span class="text-muted fw-normal d-none" id="ctUraianOpt"> (opsional)</span></label><textarea class="form-control" id="ctUraian" rows="4" placeholder="Tuliskan fakta yang diketahui dengan bahasa yang jelas dan sederhana."></textarea></div>
