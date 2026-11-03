@@ -258,18 +258,26 @@ function renderPicker() {
 function addSiswa(id) { const s = SISWA.find((x) => x.SiswaID === id); if (s) selSiswa.push(s); $('ctCari').value = ''; $('ctPicker').classList.add('d-none'); renderChips(); }
 function delSiswa(id) { selSiswa = selSiswa.filter((s) => s.SiswaID !== id); renderChips(); }
 function setProg(p, manual) { if (manual !== false) ctProgManual = true; ctProg = p; selNilai = {}; document.querySelectorAll('#ctProg .opt').forEach((e) => e.classList.toggle('on', e.dataset.p === p)); renderChips(); jadwalHint(); }
-function setNilai(id, asp, v) { (selNilai[id] = selNilai[id] || {})[asp] = v; renderChips(); }
+function setNilai(id, asp, v) { const o = (selNilai[id] = selNilai[id] || {}); o[asp] = o[asp] === v ? '' : v; renderChips(); }
 function setNilaiAll(asp, v) { selSiswa.forEach((s) => { (selNilai[s.SiswaID] = selNilai[s.SiswaID] || {})[asp] = v; }); renderChips(); }
+function asuhKey() { return 'myeye_asuh_' + ((USER && (USER.UserID || USER.userId || USER.username)) || 'u'); }
+function asuhGet() { try { return JSON.parse(localStorage.getItem(asuhKey()) || '[]'); } catch (e) { return []; } }
+function asuhSimpan() { try { localStorage.setItem(asuhKey(), JSON.stringify(selSiswa.map((s) => s.SiswaID))); toast('Disimpan sebagai anak asuh Anda (' + selSiswa.length + ' siswa).'); renderChips(); } catch (e) { toast('Tidak dapat menyimpan di perangkat ini.', true); } }
+function asuhPakai() { const ids = asuhGet(); selSiswa = ids.map((id) => SISWA.find((x) => x.SiswaID === id)).filter(Boolean); selNilai = {}; renderChips(); }
 function renderChips() {
   refreshNarasi();
-  if (!selSiswa.length) { $('ctChips').innerHTML = '<span class="meta">Belum ada siswa dipilih.</span>'; return; }
-  if (ctKat !== 'Program Sekolah') { $('ctChips').innerHTML = selSiswa.map((s) => '<span class="chip"><b>' + esc(s.Nama) + '</b> <small>' + esc(s.Kelas) + '</small><button onclick="delSiswa(\'' + s.SiswaID + '\')" aria-label="Hapus">&times;</button></span>').join(''); return; }
+  const chip = (s) => '<span class="chip"><b>' + esc(s.Nama) + '</b> <small>' + esc(s.Kelas) + '</small><button onclick="delSiswa(\'' + s.SiswaID + '\')" aria-label="Hapus">&times;</button></span>';
+  const asuh = ctKat === 'Program Sekolah' ? asuhGet() : [];
+  const asuhBar = ctKat === 'Program Sekolah' ? '<div class="meta mb-2">' + (asuh.length ? '<button type="button" class="btn btn-sm btn-outline-gold py-0 me-1" onclick="asuhPakai()"><i class="bi bi-people"></i> Pakai anak asuh saya (' + asuh.length + ')</button>' : '') + (selSiswa.length ? '<button type="button" class="btn btn-sm btn-outline-gold py-0" onclick="asuhSimpan()"><i class="bi bi-bookmark-heart"></i> Simpan pilihan ini sebagai anak asuh saya</button>' : '') + '</div>' : '';
+  if (!selSiswa.length) { $('ctChips').innerHTML = asuhBar + '<span class="meta">Belum ada siswa dipilih.</span>'; return; }
+  if (ctKat !== 'Program Sekolah') { $('ctChips').innerHTML = selSiswa.map(chip).join(''); return; }
   const d = PROGRAM[ctProg];
-  if (!d) { $('ctChips').innerHTML = selSiswa.map((s) => '<span class="chip"><b>' + esc(s.Nama) + '</b> <small>' + esc(s.Kelas) + '</small><button onclick="delSiswa(\'' + s.SiswaID + '\')" aria-label="Hapus">&times;</button></span>').join('') + '<div class="meta mt-1">Pilih program di atas untuk mengisi penilaian.</div>'; return; }
-  const row = (id, asp) => '<div class="ind-pick"><span class="asp">' + esc(d[asp].nama) + '</span>' + d[asp].opsi.map((o, i) => '<button type="button" class="' + lvCls(d[asp].opsi.length, i) + ((selNilai[id] || {})[asp === 'a1' ? 'n1' : 'n2'] === o ? ' on' : '') + '" onclick="setNilai(\'' + id + '\',\'' + (asp === 'a1' ? 'n1' : 'n2') + '\',\'' + o + '\')">' + o + '</button>').join('') + '</div>';
-  const all = (asp, key) => '<div class="meta mb-1">Samakan semua &ndash; ' + esc(d[asp].nama) + ': ' + d[asp].opsi.map((o) => '<button type="button" class="btn btn-sm btn-outline-gold py-0 me-1" onclick="setNilaiAll(\'' + key + '\',\'' + o + '\')">' + o + '</button>').join('') + '</div>';
-  $('ctChips').innerHTML = all('a1', 'n1') + all('a2', 'n2') +
-    selSiswa.map((s) => '<div class="border rounded p-2 mb-1" style="background:#fffdf6"><div><b>' + esc(s.Nama) + '</b> <small class="text-muted">' + esc(s.Kelas) + '</small><button class="btn btn-sm text-danger float-end p-0" onclick="delSiswa(\'' + s.SiswaID + '\')" aria-label="Hapus">&times;</button></div>' + row(s.SiswaID, 'a1') + row(s.SiswaID, 'a2') + '</div>').join('');
+  if (!d) { $('ctChips').innerHTML = asuhBar + selSiswa.map(chip).join('') + '<div class="meta mt-1">Pilih program di atas untuk menampilkan tabel checklist.</div>'; return; }
+  const A = [['a1', 'n1'], ['a2', 'n2']];
+  let h = asuhBar + '<div class="meta mb-1">Centang satu pilihan di tiap kolom. Klik lingkaran di baris <b>"Semua"</b> untuk mengisi seluruh siswa sekaligus.</div><div class="table-responsive"><table class="pg-tbl"><thead><tr><th class="nm" rowspan="2">Nama siswa</th>' + A.map(([a]) => '<th colspan="' + d[a].opsi.length + '">' + esc(d[a].nama) + '</th>').join('') + '<th rowspan="2"></th></tr><tr>' + A.map(([a]) => d[a].opsi.map((o) => '<th>' + o + '</th>').join('')).join('') + '</tr></thead><tbody>';
+  h += '<tr class="all"><td class="nm">Semua</td>' + A.map(([a, k]) => d[a].opsi.map((o, i) => '<td><button type="button" class="pg-dot ' + lvCls(d[a].opsi.length, i) + '" onclick="setNilaiAll(\'' + k + '\',\'' + o + '\')" title="Isi semua siswa">' + o + '</button></td>').join('')).join('') + '<td></td></tr>';
+  selSiswa.forEach((s, ix) => { const v = selNilai[s.SiswaID] || {}, done = v.n1 && v.n2; h += '<tr class="' + (done ? 'done' : '') + '"><td class="nm">' + (ix + 1) + '. ' + esc(s.Nama) + ' <small class="text-muted">' + esc(s.Kelas) + '</small></td>' + A.map(([a, k]) => d[a].opsi.map((o, i) => '<td><button type="button" class="pg-dot ' + lvCls(d[a].opsi.length, i) + (v[k] === o ? ' on' : '') + '" onclick="setNilai(\'' + s.SiswaID + '\',\'' + k + '\',\'' + o + '\')" aria-label="' + esc(d[a].nama + ' ' + o) + '">' + o + '</button></td>').join('')).join('') + '<td><button class="btn btn-sm text-danger p-0" onclick="delSiswa(\'' + s.SiswaID + '\')" aria-label="Hapus">&times;</button></td></tr>'; });
+  $('ctChips').innerHTML = h + '</tbody></table></div><div class="meta mt-1">Dinilai: ' + selSiswa.filter((s) => (selNilai[s.SiswaID] || {}).n1 && (selNilai[s.SiswaID] || {}).n2).length + ' dari ' + selSiswa.length + ' siswa</div>';
 }
 function saveCatatan() {
   hideErr('ctErr');
