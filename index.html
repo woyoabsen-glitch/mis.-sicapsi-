@@ -337,6 +337,18 @@ body{background:var(--cream); color:var(--text); margin:0;}
       </div>
 
       <!-- LOG -->
+      <div class="page" id="page-aktivitas">
+        <div class="panel no-print">
+          <div class="d-flex flex-wrap gap-2 align-items-end">
+            <div><label class="form-label">Periode</label><select class="form-select form-select-sm" id="akHari" onchange="loadAktivitas()"><option value="7">7 hari terakhir</option><option value="30" selected>30 hari terakhir</option><option value="90">90 hari terakhir</option><option value="0">Semua waktu</option></select></div>
+            <div><label class="form-label">Peran</label><select class="form-select form-select-sm" id="akRole" onchange="renderAktivitas()"><option value="">Semua</option><option>Guru</option><option>Kepala</option><option>Super Admin</option></select></div>
+            <div class="meta ms-auto" id="akInfo"></div>
+          </div>
+        </div>
+        <div class="row g-2 my-2" id="akSum"></div>
+        <div class="panel"><div class="meta mb-2">Diurutkan dari yang <b>paling jarang masuk</b>. "Login" = berapa kali masuk dengan kata sandi pada periode yang dipilih. Kolom Catatan menunjukkan jumlah kejadian yang dicatat pengguna pada periode yang sama.</div>
+          <div class="table-responsive"><table class="tbl"><thead><tr><th>#</th><th>Nama</th><th>Peran</th><th class="text-center">Login (periode)</th><th class="text-center">Login (total)</th><th>Login terakhir</th><th class="text-center">Catatan dibuat</th><th>Keterangan</th></tr></thead><tbody id="akBody"></tbody></table></div></div>
+      </div>
       <div class="page" id="page-log">
         <div class="panel"><div class="table-responsive"><table class="tbl"><thead><tr><th>Waktu</th><th>Pelaku</th><th>Aksi</th><th>Rincian</th><th>Alasan</th></tr></thead><tbody id="logBody"></tbody></table></div></div>
       </div>
