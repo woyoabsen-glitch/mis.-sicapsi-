@@ -102,6 +102,7 @@ const MENU = [
   { id: 'siswa', t: 'Data Siswa', i: 'bi-people-fill', ok: () => true },
   { id: 'laporan', t: 'Laporan Bulanan', i: 'bi-file-earmark-text-fill', ok: () => seesAll() || isWali() },
   { id: 'pengguna', t: 'Pengguna', i: 'bi-person-gear', ok: isAdmin },
+  { id: 'aktivitas', t: 'Aktivitas Login', i: 'bi-person-check-fill', ok: seesAll },
   { id: 'log', t: 'Log Aktivitas', i: 'bi-clock-history', ok: seesAll },
   { id: 'wa', t: 'WhatsApp', i: 'bi-whatsapp', ok: () => seesAll() || isWali() },
   { id: 'pengaturan', t: 'Pengaturan', i: 'bi-gear-fill', ok: isAdmin }
@@ -121,6 +122,7 @@ function go(p) {
   if (p === 'siswa') loadSiswa();
   if (p === 'laporan') initLaporan();
   if (p === 'pengguna') loadUsers();
+  if (p === 'aktivitas') loadAktivitas();
   if (p === 'log') loadLog();
   if (p === 'wa') initWa();
   if (p === 'pengaturan') { loadPengaturan(); bkShowLast(); }
@@ -676,3 +678,25 @@ window.addEventListener('DOMContentLoaded', () => {
   if (t) { TOKEN = t; api('me').then((d) => enterApp(d.user, d.pengaturan)).catch(() => forceLogout()); }
   if ('serviceWorker' in navigator && location.protocol.startsWith('http') && !window.SICAPSI_API) navigator.serviceWorker.register('sw.js').catch(() => {});
 });
+
+/* ===== Aktivitas Login (Super Admin & Kepala) ===== */
+let AK = null;
+function loadAktivitas() {
+  $('akBody').innerHTML = '<tr><td colspan="8" class="meta py-3">Memuat…</td></tr>';
+  api('getAktivitasLogin', parseInt($('akHari').value, 10)).then((r) => { AK = r; renderAktivitas(); }).catch((e) => { $('akBody').innerHTML = ''; toast(e.message, true); });
+}
+function akStatus(x) {
+  if (x.sejakHari === null) return ['bad', 'Belum pernah masuk'];
+  if (x.sejakHari <= 7) return ['ok', 'Rutin'];
+  if (x.sejakHari <= 30) return ['mid', 'Perlu diingatkan (' + x.sejakHari + ' hari lalu)'];
+  return ['bad', 'Lama tidak masuk (' + x.sejakHari + ' hari)'];
+}
+function renderAktivitas() {
+  if (!AK) return;
+  const role = $('akRole').value, all = AK.rows, rows = role ? all.filter((x) => x.role === role) : all;
+  const belum = rows.filter((x) => x.sejakHari === null).length, lama = rows.filter((x) => x.sejakHari !== null && x.sejakHari > 7).length, tdkPeriode = rows.filter((x) => x.loginPeriode === 0).length;
+  $('akInfo').textContent = AK.hari ? 'Periode: ' + AK.sejak + ' s.d. ' + AK.hariIni : 'Seluruh riwayat';
+  $('akSum').innerHTML = [['Pengguna aktif', rows.length, ''], ['Tidak login di periode ini', tdkPeriode, 'text-warning'], ['Belum pernah masuk', belum, 'text-danger'], ['Terakhir masuk > 7 hari lalu', lama, 'text-warning']].map((c) => '<div class="col-6 col-md-3"><div class="panel text-center mb-0"><div style="font-size:26px;font-weight:800" class="' + c[2] + '">' + c[1] + '</div><div class="meta">' + c[0] + '</div></div></div>').join('');
+  const col = { ok: '#16a34a', mid: '#d97706', bad: '#dc2626' };
+  $('akBody').innerHTML = rows.length ? rows.map((x, i) => { const st = akStatus(x); return '<tr><td>' + (i + 1) + '</td><td><b>' + esc(x.nama) + '</b><div class="meta">' + esc(x.username) + (x.kelas ? ' &middot; Wali kelas ' + esc(x.kelas) : '') + '</div></td><td>' + esc(x.role) + '</td><td class="text-center"><b>' + x.loginPeriode + '</b></td><td class="text-center">' + x.loginTotal + '</td><td style="white-space:nowrap">' + (x.terakhir ? esc(x.terakhir.slice(0, 16)) : '&ndash;') + '</td><td class="text-center">' + x.catatan + '</td><td><span class="ind" style="background:' + col[st[0]] + '">' + esc(st[1]) + '</span></td></tr>'; }).join('') : '<tr><td colspan="8" class="meta py-3">Tidak ada data.</td></tr>';
+}
