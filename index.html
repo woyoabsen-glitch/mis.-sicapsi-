@@ -195,6 +195,8 @@ body{background:var(--cream); color:var(--text); margin:0;}
 .kbc{margin:6px 0; font-size:10.5px;} .kbc>div{border-radius:6px; padding:5px 9px; margin:3px 0; -webkit-print-color-adjust:exact; print-color-adjust:exact; break-inside:avoid;} .kbc ul{margin:2px 0 0 16px; padding:0;}
 .kbc .d{background:#f1f5f9; border-left:4px solid #475569;} .kbc .k{background:#dcfce7; border-left:4px solid #16a34a;} .kbc .f{background:#ffedd5; border-left:4px solid #ea580c;} .kbc .t{background:#dbeafe; border-left:4px solid #2563eb;} .kbc h6{margin:0 0 2px; font-size:11px; font-weight:800;}
 .pm-box{border:1px solid #bbb; border-radius:6px; padding:4px 8px; margin:4px 0; font-size:10.5px;}
+.pk-chip{display:inline-flex;align-items:center;gap:5px;border:1.5px solid var(--line);border-radius:20px;padding:3px 10px;margin:0 6px 6px 0;font-size:12.5px;cursor:pointer;background:#fff}.pk-chip input{accent-color:#16703a}.pk-chip.on{border-color:#16703a;background:#e8f5ec;font-weight:600}
+.pk-day{border:1.5px solid var(--line);border-radius:14px;padding:10px 12px;background:#fff}.pk-day h6{font-weight:800;color:#0f4a28;margin:0 0 6px}.pk-sub{font-size:11.5px;color:var(--muted);font-weight:700;margin:6px 0 4px}
 </style>
 </head>
 <body>
@@ -351,6 +353,52 @@ body{background:var(--cream); color:var(--text); margin:0;}
       </div>
       <div class="page" id="page-log">
         <div class="panel"><div class="table-responsive"><table class="tbl"><thead><tr><th>Waktu</th><th>Pelaku</th><th>Aksi</th><th>Rincian</th><th>Alasan</th></tr></thead><tbody id="logBody"></tbody></table></div></div>
+      </div>
+
+      <!-- JADWAL PIKET -->
+      <div class="page" id="page-piket">
+        <div class="panel" style="max-width:900px">
+          <h5><i class="bi bi-alarm-fill me-1"></i> Pengingat Piket Otomatis</h5>
+          <div class="meta mb-3">Setiap malam sekitar pukul 19.00 WIB, guru yang bertugas piket <b>keesokan paginya</b> menerima pesan WhatsApp otomatis (contoh: piket hari Selasa diingatkan pada Senin malam). Tidak ada jadwal piket di suatu hari = tidak ada pesan.</div>
+          <div class="row g-2 mb-2">
+            <div class="col-6 col-md-3"><label class="form-label">Pengingat otomatis</label><select class="form-select form-select-sm" id="pkAktif"><option value="Ya">Aktif</option><option value="Tidak">Nonaktif</option></select></div>
+            <div class="col-6 col-md-3"><label class="form-label">Jam Absen Pagi</label><input class="form-control form-control-sm" id="pkJamPagi" maxlength="10" placeholder="06.30"></div>
+            <div class="col-6 col-md-3"><label class="form-label">Jam Piket Masjid</label><input class="form-control form-control-sm" id="pkJamMasjid" maxlength="10" placeholder="06.45"></div>
+            <div class="col-6 col-md-3"><label class="form-label">Pemicu harian</label><div id="pkTrig" class="small"></div></div>
+          </div>
+          <div class="mb-2"><label class="form-label">Tanggal libur (pengingat tidak dikirim) <span class="meta">format 2026-12-24, pisahkan dengan koma</span></label><input class="form-control form-control-sm" id="pkLibur" placeholder="2026-12-24, 2026-12-25"></div>
+          <div class="mb-2"><label class="form-label">Isi pesan <span class="meta">gunakan {nama} {tanggal} {hari} {tugas} {madrasah}</span></label><textarea class="form-control" id="pkTpl" rows="7"></textarea></div>
+          <div id="pkWaWarn" class="mb-2"></div>
+          <div class="d-flex flex-wrap gap-2">
+            <button class="btn btn-gold" style="width:auto;height:42px;padding:0 18px" onclick="pkSimpanAturan()"><i class="bi bi-check2-circle me-1"></i> Simpan Aturan</button>
+            <button class="btn btn-outline-gold" onclick="pkPasang()"><i class="bi bi-lightning-charge-fill me-1"></i> Pasang / Perbarui Pemicu 19.00</button>
+          </div>
+        </div>
+
+        <div class="panel" style="max-width:900px">
+          <h5>Daftar Guru Piket &amp; Nomor WhatsApp</h5>
+          <div class="meta mb-2">Nomor ditulis 08xx atau 628xx. Guru tanpa nomor tidak dapat dikirimi pengingat.</div>
+          <div id="pkGuru"></div>
+          <button class="btn btn-sm btn-outline-gold mt-1" onclick="pkTambahGuru()"><i class="bi bi-plus-lg"></i> Tambah guru</button>
+        </div>
+
+        <div class="panel" style="max-width:900px">
+          <h5>Jadwal Piket Mingguan</h5>
+          <div class="meta mb-2">Centang nama guru yang bertugas pada tiap hari. Satu guru boleh bertugas di dua jenis piket pada hari yang sama (pesannya digabung).</div>
+          <div class="row g-2" id="pkGrid"></div>
+          <button class="btn btn-gold mt-3" style="max-width:280px" onclick="pkSimpanJadwal()"><i class="bi bi-save-fill me-1"></i> Simpan Jadwal &amp; Nomor</button>
+        </div>
+
+        <div class="panel" style="max-width:900px">
+          <h5>Pratinjau &amp; Kirim Manual</h5>
+          <div class="meta mb-2">Pratinjau memakai data yang <b>sudah tersimpan</b>. Simpan dulu jika baru mengubah jadwal.</div>
+          <div class="d-flex flex-wrap gap-2 align-items-end mb-2">
+            <div><label class="form-label">Tanggal piket</label><input type="date" class="form-control form-control-sm" id="pkTgl"></div>
+            <button class="btn btn-outline-gold" onclick="pkPratinjau()"><i class="bi bi-eye-fill me-1"></i> Lihat Pratinjau</button>
+            <button class="btn btn-outline-gold" onclick="pkKirim()"><i class="bi bi-send-fill me-1"></i> Kirim Sekarang</button>
+          </div>
+          <div id="pkPrev"></div>
+        </div>
       </div>
 
       <!-- WHATSAPP -->
