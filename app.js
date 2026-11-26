@@ -104,6 +104,7 @@ const MENU = [
   { id: 'pengguna', t: 'Pengguna', i: 'bi-person-gear', ok: isAdmin },
   { id: 'aktivitas', t: 'Aktivitas Login', i: 'bi-person-check-fill', ok: seesAll },
   { id: 'log', t: 'Log Aktivitas', i: 'bi-clock-history', ok: seesAll },
+  { id: 'piket', t: 'Jadwal Piket', i: 'bi-alarm-fill', ok: isAdmin },
   { id: 'wa', t: 'WhatsApp', i: 'bi-whatsapp', ok: () => seesAll() || isWali() },
   { id: 'pengaturan', t: 'Pengaturan', i: 'bi-gear-fill', ok: isAdmin }
 ];
@@ -124,6 +125,7 @@ function go(p) {
   if (p === 'pengguna') loadUsers();
   if (p === 'aktivitas') loadAktivitas();
   if (p === 'log') loadLog();
+  if (p === 'piket') loadPiket();
   if (p === 'wa') initWa();
   if (p === 'pengaturan') { loadPengaturan(); bkShowLast(); }
 }
@@ -699,4 +701,67 @@ function renderAktivitas() {
   $('akSum').innerHTML = [['Pengguna aktif', rows.length, ''], ['Tidak login di periode ini', tdkPeriode, 'text-warning'], ['Belum pernah masuk', belum, 'text-danger'], ['Terakhir masuk > 7 hari lalu', lama, 'text-warning']].map((c) => '<div class="col-6 col-md-3"><div class="panel text-center mb-0"><div style="font-size:26px;font-weight:800" class="' + c[2] + '">' + c[1] + '</div><div class="meta">' + c[0] + '</div></div></div>').join('');
   const col = { ok: '#16a34a', mid: '#d97706', bad: '#dc2626' };
   $('akBody').innerHTML = rows.length ? rows.map((x, i) => { const st = akStatus(x); return '<tr><td>' + (i + 1) + '</td><td><b>' + esc(x.nama) + '</b><div class="meta">' + esc(x.username) + (x.kelas ? ' &middot; Wali kelas ' + esc(x.kelas) : '') + '</div></td><td>' + esc(x.role) + '</td><td class="text-center"><b>' + x.loginPeriode + '</b></td><td class="text-center">' + x.loginTotal + '</td><td style="white-space:nowrap">' + (x.terakhir ? esc(x.terakhir.slice(0, 16)) : '&ndash;') + '</td><td class="text-center">' + x.catatan + '</td><td><span class="ind" style="background:' + col[st[0]] + '">' + esc(st[1]) + '</span></td></tr>'; }).join('') : '<tr><td colspan="8" class="meta py-3">Tidak ada data.</td></tr>';
+}
+
+/* ===== Jadwal Piket & pengingat WhatsApp (Super Admin) ===== */
+let PK = null;
+const PK_JENIS = [['pagi', 'Piket Absen Pagi'], ['masjid', 'Piket di Masjid']];
+function loadPiket() {
+  if (!$('pkTgl').value) { const b = new Date(Date.now() + 86400000 + 7 * 3600e3); $('pkTgl').value = b.toISOString().slice(0, 10); }
+  Promise.all([api('piketGet'), api('getPengaturan')]).then(([r, p]) => {
+    PENG = p; PK = { seq: 0, hariUrut: r.hariUrut, trigger: r.trigger, waSiap: r.waSiap, waAktif: r.waAktif, terakhir: r.terakhir, guru: [], sel: {} };
+    const idOf = {};
+    r.guru.forEach((g) => { const k = ++PK.seq; idOf[g.nama] = k; PK.guru.push({ k: k, nama: g.nama, hp: g.hp || '' }); });
+    r.jadwal.forEach((j) => { if (idOf[j.nama]) PK.sel[j.hari + '|' + j.jenis + '|' + idOf[j.nama]] = 1; });
+    $('pkAktif').value = p.Piket_Aktif; $('pkJamPagi').value = p.Piket_JamPagi; $('pkJamMasjid').value = p.Piket_JamMasjid; $('pkLibur').value = p.Piket_Libur; $('pkTpl').value = p.Piket_Tpl;
+    renderPiket();
+  }).catch((e) => toast(e.message, true));
+}
+function renderPiket() {
+  if (!PK) return;
+  $('pkTrig').innerHTML = PK.trigger ? '<span class="text-success"><i class="bi bi-check-circle-fill"></i> Terpasang</span>' : '<span class="text-danger"><i class="bi bi-exclamation-triangle-fill"></i> Belum dipasang</span>';
+  const w = [];
+  if (!PK.waAktif) w.push('Fitur WhatsApp belum diaktifkan (menu WhatsApp &gt; Pengaturan).');
+  if (!PK.waSiap) w.push('Token Fonnte belum diisi (menu WhatsApp &gt; Pengaturan).');
+  $('pkWaWarn').innerHTML = w.length ? '<div class="alert alert-warning py-2 small mb-0"><i class="bi bi-exclamation-triangle-fill me-1"></i>' + w.join(' ') + '</div>' : '';
+  renderPkGuru(); renderPkGrid();
+}
+function renderPkGuru() {
+  $('pkGuru').innerHTML = PK.guru.length ? PK.guru.map((g, i) => '<div class="d-flex gap-2 mb-1"><input class="form-control form-control-sm" style="max-width:200px" placeholder="Nama guru" maxlength="60" value="' + esc(g.nama) + '" onchange="pkNama(' + i + ',this.value)"><input class="form-control form-control-sm" style="max-width:200px" inputmode="tel" placeholder="08xxxxxxxxxx" maxlength="20" value="' + esc(g.hp) + '" onchange="PK.guru[' + i + '].hp=this.value.trim()"><button class="btn btn-sm btn-outline-danger" title="Hapus" onclick="pkHapusGuru(' + i + ')"><i class="bi bi-trash"></i></button></div>').join('') : '<div class="meta">Belum ada guru.</div>';
+}
+function renderPkGrid() {
+  $('pkGrid').innerHTML = PK.hariUrut.map((hari) => '<div class="col-md-6"><div class="pk-day"><h6>' + hari + '</h6>' + PK_JENIS.map((j) => '<div class="pk-sub">' + j[1] + '</div>' + (PK.guru.filter((g) => g.nama).map((g) => { const on = PK.sel[hari + '|' + j[0] + '|' + g.k]; return '<label class="pk-chip' + (on ? ' on' : '') + '"><input type="checkbox" ' + (on ? 'checked' : '') + ' onchange="pkToggle(\'' + hari + '\',\'' + j[0] + '\',' + g.k + ',this)">' + esc(g.nama) + '</label>'; }).join('') || '<span class="meta">Isi daftar guru dulu.</span>')).join('') + '</div></div>').join('');
+}
+function pkToggle(hari, jenis, k, el) { const key = hari + '|' + jenis + '|' + k; if (el.checked) PK.sel[key] = 1; else delete PK.sel[key]; el.parentNode.classList.toggle('on', el.checked); }
+function pkNama(i, v) { PK.guru[i].nama = v.trim(); renderPkGrid(); }
+function pkTambahGuru() { PK.guru.push({ k: ++PK.seq, nama: '', hp: '' }); renderPkGuru(); renderPkGrid(); }
+function pkHapusGuru(i) {
+  const g = PK.guru[i]; if (!confirm('Hapus ' + (g.nama || 'baris ini') + ' dari daftar dan jadwal?')) return;
+  Object.keys(PK.sel).forEach((key) => { if (key.split('|')[2] === String(g.k)) delete PK.sel[key]; });
+  PK.guru.splice(i, 1); renderPkGuru(); renderPkGrid();
+}
+function pkSimpanAturan() {
+  api('savePengaturan', { Piket_Aktif: $('pkAktif').value, Piket_JamPagi: $('pkJamPagi').value.trim(), Piket_JamMasjid: $('pkJamMasjid').value.trim(), Piket_Libur: $('pkLibur').value.trim(), Piket_Tpl: $('pkTpl').value })
+    .then((p) => { PENG = p; toast('Aturan pengingat piket tersimpan.'); }).catch((e) => toast(e.message, true));
+}
+function pkSimpanJadwal() {
+  const nama = {}; PK.guru.forEach((g) => { if (g.nama) nama[g.k] = g.nama; });
+  const jadwal = Object.keys(PK.sel).map((key) => { const p = key.split('|'); return nama[p[2]] ? { hari: p[0], jenis: p[1], nama: nama[p[2]] } : null; }).filter(Boolean);
+  api('piketSave', { guru: PK.guru.filter((g) => g.nama).map((g) => ({ nama: g.nama, hp: g.hp })), jadwal: jadwal })
+    .then((r) => toast('Tersimpan: ' + r.guru + ' guru, ' + r.jadwal + ' penugasan.')).catch((e) => toast(e.message, true));
+}
+function pkPasang() {
+  api('piketPasang').then(() => { PK.trigger = true; renderPiket(); toast('Pemicu harian terpasang (sekitar pukul 19.00 WIB).'); }).catch((e) => { alert(e.message); });
+}
+function pkPratinjau() {
+  $('pkPrev').innerHTML = '<div class="meta">Memuat…</div>';
+  api('piketPratinjau', $('pkTgl').value).then((r) => {
+    if (!r.penerima.length) { $('pkPrev').innerHTML = '<div class="alert alert-info py-2 small mb-0">Tidak ada jadwal piket pada hari ' + esc(r.hari) + '. Tidak ada pesan yang dikirim.</div>'; return; }
+    $('pkPrev').innerHTML = '<div class="meta mb-1">Piket ' + esc(r.tanggalIndo) + (r.libur ? ' &mdash; <b class="text-danger">tanggal libur, tidak dikirim otomatis</b>' : '') + ' &middot; ' + r.penerima.length + ' penerima</div><div class="table-responsive"><table class="tbl"><thead><tr><th>Nama</th><th>Tugas</th><th>WhatsApp</th></tr></thead><tbody>' + r.penerima.map((x) => '<tr><td><b>' + esc(x.nama) + '</b></td><td>' + x.tugas.map(esc).join('<br>') + '</td><td>' + (x.hp ? esc(x.hp) : '<span class="text-danger">belum ada nomor</span>') + '</td></tr>').join('') + '</tbody></table></div><div class="meta mt-2 mb-1">Contoh pesan untuk ' + esc(r.penerima[0].nama) + ':</div><pre style="white-space:pre-wrap;background:#f6f3ea;border-radius:10px;padding:10px;font-size:12.5px">' + esc(r.penerima[0].pesan) + '</pre>';
+  }).catch((e) => { $('pkPrev').innerHTML = ''; toast(e.message, true); });
+}
+function pkKirim() {
+  if (!confirm('Kirim pengingat piket untuk tanggal ' + $('pkTgl').value + ' sekarang? Pesan langsung terkirim ke guru yang bertugas.')) return;
+  toast('Mengirim…');
+  api('piketKirimSekarang', $('pkTgl').value).then((r) => toast('Piket ' + r.hari + ': ' + r.terkirim + ' terkirim' + (r.gagal.length ? ', ' + r.gagal.length + ' gagal: ' + r.gagal[0].alasan : '') + (r.tanpaNomor ? ', ' + r.tanpaNomor + ' tanpa nomor' : ''), r.gagal.length > 0 && r.terkirim === 0)).catch((e) => toast(e.message, true));
 }
